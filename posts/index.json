@@ -1,0 +1,190 @@
+{
+  "generated": "2026-09-03 20:22:49",
+  "count": 12,
+  "posts": [
+    {
+      "slug": "python-ch01-语法基础",
+      "title": "Python 基础笔记 · 第 1 章：语法基础",
+      "date": "2026-09-03",
+      "category": "Python 基础",
+      "tags": [
+        "Python",
+        "学习笔记",
+        "面试题",
+        "语法基础",
+        "变量",
+        "运算符"
+      ],
+      "summary": "学完 Python 基础后的第一份整理：动态类型与内存管理、变量即引用、运算符全家福与优先级、is 与 == 的区别、小整数池与字符串驻留、缩进即语法，以及 12 道高频面试题。",
+      "words": 3119
+    },
+    {
+      "slug": "python-ch02-数据结构",
+      "title": "Python 基础笔记 · 第 2 章：数据结构",
+      "date": "2026-09-03",
+      "category": "Python 基础",
+      "tags": [
+        "Python",
+        "学习笔记",
+        "面试题",
+        "数据结构",
+        "容器",
+        "深浅拷贝"
+      ],
+      "summary": "list / tuple / dict / set 四大容器的常用方法、时间复杂度、底层实现要点，切片与推导式的正确用法，深浅拷贝与可变默认参数陷阱，以及 12 道高频面试题。",
+      "words": 3027
+    },
+    {
+      "slug": "python-ch03-函数",
+      "title": "Python 基础笔记 · 第 3 章：函数",
+      "date": "2026-09-03",
+      "category": "Python 基础",
+      "tags": [
+        "Python",
+        "学习笔记",
+        "面试题",
+        "函数",
+        "装饰器",
+        "生成器"
+      ],
+      "summary": "参数传递机制、五种类别形参与解包、LEGB 作用域、闭包与延迟绑定陷阱、装饰器原理与手写模板、lambda 与高阶函数、生成器迭代器与函数注解，附 14 道高频面试题。",
+      "words": 2718
+    },
+    {
+      "slug": "python-ch04-字符串",
+      "title": "Python 基础笔记 · 第 4 章：字符串",
+      "date": "2026-09-03",
+      "category": "Python 基础",
+      "tags": [
+        "Python",
+        "学习笔记",
+        "面试题",
+        "字符串",
+        "编码",
+        "f-string"
+      ],
+      "summary": "字符串的不可变性、几十个常用方法速查、三种格式化方式对比、join 与 + 的性能差异，以及 encode/decode 乱码的成因与排查。",
+      "words": 5950
+    },
+    {
+      "slug": "python-ch05-正则表达式",
+      "title": "Python 基础笔记 · 第 5 章：正则表达式",
+      "date": "2026-09-03",
+      "category": "Python 基础",
+      "tags": [
+        "Python",
+        "学习笔记",
+        "面试题",
+        "正则表达式",
+        "re 模块"
+      ],
+      "summary": "re 模块全部核心 API、元字符与量词速查、贪婪与非贪婪、分组与命名分组、常用正则模板（手机/邮箱/URL/IP/中文），以及灾难性回溯这类性能陷阱。",
+      "words": 5723
+    },
+    {
+      "slug": "python-ch06-面向对象",
+      "title": "Python 基础笔记 · 第 6 章：面向对象",
+      "date": "2026-09-03",
+      "category": "Python 基础",
+      "tags": [
+        "Python",
+        "学习笔记",
+        "面试题",
+        "面向对象",
+        "魔术方法",
+        "设计原则"
+      ],
+      "summary": "类属性与实例属性的陷阱、三种方法类型、私有化与 property、MRO 与 super 的协作机制、常用魔术方法，以及单例模式的两种写法。",
+      "words": 8822
+    },
+    {
+      "slug": "python-ch07-常用标准库模块",
+      "title": "Python 基础笔记 · 第 7 章：常用标准库模块",
+      "date": "2026-09-03",
+      "category": "Python 基础",
+      "tags": [
+        "Python",
+        "学习笔记",
+        "面试题",
+        "标准库",
+        "os",
+        "pathlib",
+        "datetime",
+        "collections"
+      ],
+      "summary": "os/pathlib、sys、time/datetime、json/pickle、collections、itertools、functools、logging、hashlib、enum、typing、subprocess 等高频模块的核心用法、原理与面试常问点，附可直接复用的代码片段。",
+      "words": 4218
+    },
+    {
+      "slug": "python-ch08-异常处理",
+      "title": "Python 基础笔记 · 第 8 章：异常处理",
+      "date": "2026-09-03",
+      "category": "Python 基础",
+      "tags": [
+        "Python",
+        "学习笔记",
+        "面试题",
+        "异常处理",
+        "上下文管理器"
+      ],
+      "summary": "异常层级结构、try/except/else/finally 的执行顺序与 finally 里的 return 陷阱、异常链 raise from、自定义异常，以及 with 上下文管理器的实现原理与最佳实践。",
+      "words": 2797
+    },
+    {
+      "slug": "python-ch09-多线程与多进程",
+      "title": "Python 基础笔记 · 第 9 章：多线程与多进程",
+      "date": "2026-09-03",
+      "category": "Python 基础",
+      "tags": [
+        "Python",
+        "学习笔记",
+        "面试题",
+        "并发编程",
+        "GIL",
+        "多线程",
+        "多进程"
+      ],
+      "summary": "GIL 到底限制了什么、threading 与锁的正确用法、multiprocessing 与进程池、concurrent.futures 统一接口，以及 CPU 密集与 IO 密集的并发选型决策。",
+      "words": 3158
+    },
+    {
+      "slug": "2026-09-03-pandas数据清洗套路",
+      "title": "pandas 数据清洗：我常用的 7 个套路",
+      "date": "2026-09-03",
+      "category": "数据分析",
+      "tags": [
+        "Python",
+        "pandas",
+        "数据清洗"
+      ],
+      "summary": "做 food_order_data.csv 那次分析踩了不少坑，这里把最高频的清洗操作整理成套路，基本能覆盖八成的脏数据场景。",
+      "words": 483
+    },
+    {
+      "slug": "2026-09-01-HDFS写入流程拆解",
+      "title": "HDFS 写入流程拆解：一个文件是怎么被切成块的",
+      "date": "2026-08-28",
+      "category": "分布式系统",
+      "tags": [
+        "HDFS",
+        "大数据",
+        "存储"
+      ],
+      "summary": "读《HDFS数据存储的研究与应用》时把写入流程重新捋了一遍。这篇从客户端视角出发，讲清楚 pipeline 建立、数据包拆分成 chunk、以及确认应答的反向传播。",
+      "words": 611
+    },
+    {
+      "slug": "2026-08-21-从零搭建个人博客",
+      "title": "从零搭建个人博客：为什么我选了纯静态方案",
+      "date": "2026-08-21",
+      "category": "技术随笔",
+      "tags": [
+        "博客",
+        "前端",
+        "静态站"
+      ],
+      "summary": "在 Next.js、Astro、Hugo 之间纠结了一圈之后，我最终选了最\"原始\"的方案：手写 HTML + Markdown 文件。这篇记录我的选型理由和取舍过程。",
+      "words": 447
+    }
+  ]
+}

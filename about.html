@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>关于我 · 于锦洋的博客</title>
+<meta name="description" content="关于我：学习与写作的方向">
+<link rel="stylesheet" href="assets/css/style.css">
+<script>
+/* 首屏前确定主题，避免刷新时闪白 */
+(function () {
+  try {
+    var t = localStorage.getItem('blog-theme');
+    if (!t) {
+      t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+})();
+</script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="brand" href="index.html">于锦洋<span class="dot">.</span>blog</a>
+    <nav class="site-nav">
+      <a href="index.html">首页</a>
+      <a href="about.html" class="active">关于我</a>
+      <button class="theme-btn" type="button" data-theme-toggle data-current="light" aria-label="切换主题">
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+        </svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <div class="about-card">
+    <h1>关于我</h1>
+    <p class="lead">在校学生，目前在两个方向上花的时间最多：<strong>数据分析与可视化</strong>，以及<strong>分布式存储系统</strong>。这个博客用来存放这两个方向的学习记录。</p>
+
+    <h2 style="margin-top:38px;font-size:21px;">我在做什么</h2>
+    <ul>
+      <li>用 Python 生态（numpy / pandas / matplotlib / seaborn / pyecharts）做端到端的数据分析练习</li>
+      <li>研读 HDFS 相关材料，把分布式存储的原理拆成能讲清楚的笔记</li>
+      <li>把学到的东西写成文章，逼自己把逻辑理顺</li>
+    </ul>
+
+    <h2 style="margin-top:38px;font-size:21px;">关于这个博客</h2>
+    <p>纯静态站点，没有框架也没有构建步骤：文章是 <code>posts/</code> 目录下的 Markdown 文件，加一篇文章只要丢个文件再跑一次索引脚本。选这个方案的唯一理由是——它十年后还能打开。</p>
+
+    <h2 style="margin-top:38px;font-size:21px;">联系我</h2>
+    <p>邮箱：<a href="mailto:your-email@example.com">your-email@example.com</a><br>
+    GitHub：<a href="https://github.com/your-id" target="_blank" rel="noopener noreferrer">github.com/your-id</a></p>
+    <p style="color:var(--text-faint);font-size:14.5px;">（以上联系方式为占位内容，直接编辑 <code>about.html</code> 替换即可）</p>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container">© 2026 于锦洋 · 用 Markdown 与原生 HTML 构建</div>
+</footer>
+
+<script src="assets/js/theme.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () { window.Theme.init(); });
+</script>
+</body>
+</html>
