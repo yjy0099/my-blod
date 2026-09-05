@@ -172,3 +172,50 @@ push 后 GitHub Pages 会**自动重新部署**，约 1~2 分钟后刷新即可�
 - **自定义域名**：买域名后，在 Pages 设置里填 Custom domain，可隐藏 `yjy0099` 用户名。
 - **GitHub Actions 自动部署**：现在 Pages 已能自动 rebuild，不必急着加；如需更明确流程可添加工作流文件。
 - **站内搜索 / RSS / 评论**：属功能增强，不影响部署。
+
+---
+
+## 十一、换电脑 / 多设备如何继续操作
+
+项目已经在 GitHub 上了，所以新电脑**不是 `git init` 新建，而是 `git clone` 拉取**。流程与当前电脑大体一致，只多两个首次准备动作。
+
+### 新电脑首次准备（一次性）
+
+```bash
+# 1. 装好 Git 后配置身份（每台电脑都要配）
+git config --global user.name  "yjy0099"
+git config --global user.email "yjy00993@gmail.com"
+
+# 2. 生成这台电脑自己的 SSH 密钥（不能复用别的电脑的密钥）
+ssh-keygen -t ed25519 -C "yjy00993@gmail.com"
+cat ~/.ssh/id_ed25519.pub
+# 把上面整行公钥复制到 GitHub → Settings → SSH and GPG keys → New SSH key 添加
+# 一个 GitHub 账号可以绑定多台电脑的公钥
+
+# 3. 验证连通
+ssh -T git@github.com    # 显示 Hi yjy0099! 即成功
+```
+
+### 拿到项目（用 clone，不用 init）
+
+```bash
+git clone git@github.com:yjy0099/my-blod.git
+cd my-blod
+```
+
+clone 下来就包含 `index.html`、`posts/`、`assets/`、`.gitignore`、`.nojekyll` 全套，直接能改、能本地预览。
+
+### 之后日常更新（和当前电脑一字不差）
+
+```bash
+git add -A
+git commit -m "改了什么"
+git push
+```
+
+### 多台电脑交替改同一项目
+
+- push 前先 `git pull` 拉取另一台/网页上的最新改动，避免冲突。
+- `.gitignore` 跟着仓库走，clone 后就在里面，不用重写。
+- `.workbuddy/` 不会到新电脑（被 gitignore 排除），那是个人本地笔记，不影响博客运行。
+- 每台电脑的 SSH 公钥都要单独加进同一个 GitHub 账号。
