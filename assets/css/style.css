@@ -130,6 +130,19 @@ a:hover { color: var(--accent-hover); }
 .site-nav a:hover,
 .site-nav a.active { color: var(--accent); }
 
+.site-nav .github-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  color: var(--text-muted);
+  border-radius: 9px;
+  transition: color .15s ease, background-color .15s ease;
+}
+.site-nav .github-link:hover { color: var(--accent); background: var(--bg-soft); }
+.site-nav .github-link svg { width: 19px; height: 19px; fill: currentColor; }
+
 .theme-btn {
   display: inline-flex;
   align-items: center;
@@ -486,3 +499,32 @@ a:hover { color: var(--accent-hover); }
   .site-nav { gap: 14px; }
   .article-body { font-size: 16px; }
 }
+
+/* ---------- 回到顶部按钮 ---------- */
+.backTop {
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+  width: 44px;
+  height: 44px;
+  display: none;                 /* 初始隐藏：由 backtop.js 在滚动 >300px 时改为 block */
+  text-align: center;
+  line-height: 42px;             /* 配合固定高度，block 状态下箭头仍垂直居中 */
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--accent);
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  z-index: 60;                   /* 高于顶部导航(z-index:50) */
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease, transform .15s ease;
+}
+.backTop:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  transform: translateY(-2px);
+}
+[data-theme="dark"] .backTop:hover { color: #0f1216; }
