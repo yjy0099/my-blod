@@ -74,9 +74,86 @@
           '<div class="article-body">' + window.Markdown.render(post.body) + '</div>';
 
         renderNav(Store.neighbors(posts, post.slug));
+        buildToc();
       })
       .catch(function (err) {
         fail(err.message);
       });
   });
+
+  /* 根据正文标题(h2-h4)自动生成目录，点击平滑跳转，并高亮当前章节 */
+  function buildToc() {
+    var body = document.querySelector('.article-body');
+    var wrap = document.getElementById('toc-wrap');
+    var nav = document.getElementById('toc-nav');
+    if (!body || !wrap || !nav) return;
+
+    var heads = body.querySelectorAll('h2, h3, h4');
+    if (!heads.length) { wrap.hidden = true; return; }
+    wrap.hidden = false;
+
+    var html = '';
+    Array.prototype.forEach.call(heads, function (h) {
+      var level = Number(h.tagName.charAt(1));
+      html += '<li class="toc-l' + level + '">' +
+        '<a href="#' + encodeURIComponent(h.id) + '" data-target="' + esc(h.id) + '">' +
+        esc(h.textContent.trim()) + '</a></li>';
+    });
+    nav.innerHTML = html;
+
+    bindToc();
+    initScrollSpy(heads);
+  }
+
+  function bindToc() {
+    var nav = document.getElementById('toc-nav');
+    var wrap = document.getElementById('toc-wrap');
+    var toggle = document.getElementById('toc-toggle');
+
+    nav.addEventListener('click', function (e) {
+      var a = e.target.closest('a[data-target]');
+      if (!a) return;
+      e.preventDefault();
+      var id = a.getAttribute('data-target');
+      var target = document.getElementById(id);
+      if (!target) return;
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (history.replaceState) history.replaceState(null, '', '#' + id);
+      if (wrap.classList.contains('open')) wrap.classList.remove('open');
+    });
+
+    if (toggle) {
+      toggle.addEventListener('click', function () {
+        var open = wrap.classList.toggle('open');
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+    }
+  }
+
+  function initScrollSpy(heads) {
+    var links = document.querySelectorAll('#toc-nav a[data-target]');
+    if (!('IntersectionObserver' in window)) return;
+
+    var linkMap = {};
+    Array.prototype.forEach.call(links, function (a) {
+      linkMap[a.getAttribute('data-target')] = a;
+    });
+
+    var visible = [];
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        var idx = visible.indexOf(en.target);
+        if (en.isIntersecting) { if (idx === -1) visible.push(en.target); }
+        else if (idx !== -1) { visible.splice(idx, 1); }
+      });
+      Array.prototype.forEach.call(links, function (a) { a.classList.remove('active'); });
+      if (visible.length) {
+        var top = visible.reduce(function (a, b) { return a.getBoundingClientRect().top <= b.getBoundingClientRect().top ? a : b; });
+        var act = linkMap[top.id];
+        if (act) act.classList.add('active');
+      }
+    }, { rootMargin: '-80px 0px -70% 0px', threshold: 0 });
+
+    Array.prototype.forEach.call(heads, function (h) { observer.observe(h); });
+  }
 })();
