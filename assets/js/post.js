@@ -65,7 +65,7 @@
         var posts = results[0].posts || [];
         var post = results[1];
 
-        document.title = post.title + ' · 于锦洋的博客';
+        document.title = post.title + ' · YJY的博客';
         document.getElementById('article-root').innerHTML =
           '<header class="article-header">' +
             '<h1>' + esc(post.title) + '</h1>' +
