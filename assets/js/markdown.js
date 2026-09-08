@@ -69,28 +69,6 @@
     return /^\s*(#{1,6}\s|```|~~~|>|([-*+]|\d+[.)])\s|\|)/.test(line);
   }
 
-  /* 为标题生成稳定且唯一的锚点 id，供目录(TOC)跳转使用 */
-  function slugify(text) {
-    var s = String(text).trim().toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^\w一-鿿-]/g, '')   /* 保留字母数字下划线、中文、连字符 */
-      .replace(/-+/g, '-')
-      .replace(/^-+|-+$/g, '');
-    return s || 'section';
-  }
-
-  function headingState() {
-    return { used: Object.create(null), counter: 0 };
-  }
-
-  function uniqueId(state, text) {
-    var base = slugify(text);
-    if (!(base in state.used)) { state.used[base] = 0; }
-    var n = state.used[base];
-    state.used[base] += 1;
-    return n === 0 ? base : base + '-' + n;
-  }
-
   var highlighter = null;
 
   /* 浏览器读 window.Highlighter，Node 下直接 require，两者都没有就退回纯转义 */
@@ -246,7 +224,6 @@
       .split('\n');
     var html = '';
     var i = 0;
-    var state = headingState();
 
     while (i < lines.length) {
       var line = lines[i];
@@ -261,9 +238,7 @@
       var heading = /^(#{1,6})\s+(.*)$/.exec(line);
       if (heading) {
         var level = heading[1].length;
-        var raw = heading[2].trim();
-        var id = uniqueId(state, raw);
-        html += '<h' + level + ' id="' + escapeHtml(id) + '">' + inline(raw) + '</h' + level + '>';
+        html += '<h' + level + '>' + inline(heading[2].trim()) + '</h' + level + '>';
         i += 1; continue;
       }
 
