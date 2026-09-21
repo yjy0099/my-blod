@@ -1,7 +1,165 @@
 {
-  "generated": "2026-09-03 20:22:49",
-  "count": 12,
+  "generated": "2026-09-21 16:25:59",
+  "count": 21,
   "posts": [
+    {
+      "slug": "mysql-ch01-数据库基础与安装",
+      "title": "MySQL 笔记 · 第 1 章：数据库基础与安装",
+      "date": "2026-09-21",
+      "category": "MySQL 数据库",
+      "tags": [
+        "MySQL",
+        "数据库",
+        "学习笔记",
+        "面试题",
+        "SQL",
+        "安装配置"
+      ],
+      "summary": "从「数据库是什么」讲到 MySQL 装起来：数据三大类与 RDBMS/NoSQL 的分工、五种主流关系型数据库、Windows 下 my.ini 配置与 initialize 初始化、数据库的组成部分、SQL 的四大分类与标识符规范，附 10 道高频面试题。",
+      "words": 2127
+    },
+    {
+      "slug": "mysql-ch02-数据库与表操作",
+      "title": "MySQL 笔记 · 第 2 章：数据库与表操作",
+      "date": "2026-09-21",
+      "category": "MySQL 数据库",
+      "tags": [
+        "MySQL",
+        "数据库",
+        "学习笔记",
+        "面试题",
+        "DDL",
+        "数据类型",
+        "建表"
+      ],
+      "summary": "DDL 第一章：库的增删查用、13 种常见数据类型与选型（含金额为何用 decimal）、建表语法与字段注释、desc 看结构、show create table 看建表语句，以及 alter table 改名/加列/删列/改类型/改列名，附 10 道高频面试题。",
+      "words": 1848
+    },
+    {
+      "slug": "mysql-ch03-数据操作与约束设计",
+      "title": "MySQL 笔记 · 第 3 章：数据操作与约束设计",
+      "date": "2026-09-21",
+      "category": "MySQL 数据库",
+      "tags": [
+        "MySQL",
+        "数据库",
+        "学习笔记",
+        "面试题",
+        "DML",
+        "约束",
+        "范式",
+        "表关系"
+      ],
+      "summary": "DML 与设计篇：insert 两种写法与批量插入、where 六类条件（关系/逻辑/区间/枚举/模糊/空值）、delete 与 truncate 的五点区别、六种约束、三大范式、一对一/一对多/多对多/树状四种表关系建模，附 12 道高频面试题。",
+      "words": 2557
+    },
+    {
+      "slug": "mysql-ch04-查询基础DQL",
+      "title": "MySQL 笔记 · 第 4 章：查询基础 DQL",
+      "date": "2026-09-21",
+      "category": "MySQL 数据库",
+      "tags": [
+        "MySQL",
+        "数据库",
+        "学习笔记",
+        "面试题",
+        "DQL",
+        "查询",
+        "分组",
+        "分页"
+      ],
+      "summary": "查询是 SQL 的核心：简单查询与心跳检测、from/where、group by 配聚合函数、having 与 where 的区别、order by 排序技巧、limit 分页公式 offset=(page-1)*rows，以及完整查询语法与 SQL 执行顺序，附 12 道高频面试题。",
+      "words": 1995
+    },
+    {
+      "slug": "mysql-ch05-高级查询",
+      "title": "MySQL 笔记 · 第 5 章：高级查询",
+      "date": "2026-09-21",
+      "category": "MySQL 数据库",
+      "tags": [
+        "MySQL",
+        "数据库",
+        "学习笔记",
+        "面试题",
+        "子查询",
+        "连接查询",
+        "递归查询"
+      ],
+      "summary": "把查询从「单表」升级到「多表」：四类子查询（列/关系条件/in/exists）、嵌套查询与别名、with 临时表、union 与 union all、left/right/inner join 关联查询、with recursive 递归查询（查下级/查上级），附 12 道高频面试题。",
+      "words": 2291
+    },
+    {
+      "slug": "mysql-ch06-内置函数与窗口函数",
+      "title": "MySQL 笔记 · 第 6 章：内置函数与窗口函数",
+      "date": "2026-09-21",
+      "category": "MySQL 数据库",
+      "tags": [
+        "MySQL",
+        "数据库",
+        "学习笔记",
+        "面试题",
+        "函数",
+        "case when",
+        "行列转换",
+        "窗口函数"
+      ],
+      "summary": "一把用熟就能少写很多代码的工具箱：字符串函数（length 与 char_length 的区别、substr、substring_index）、日期函数（datediff、date_add、date_format）、数学/加密函数、ifnull 与 if、case when 两种语法与经典「行列转换」题、rank 窗口函数，附 12 道高频面试题。",
+      "words": 2024
+    },
+    {
+      "slug": "mysql-ch07-视图与索引",
+      "title": "MySQL 笔记 · 第 7 章：视图与索引",
+      "date": "2026-09-21",
+      "category": "MySQL 数据库",
+      "tags": [
+        "MySQL",
+        "数据库",
+        "学习笔记",
+        "面试题",
+        "视图",
+        "索引",
+        "B+Tree",
+        "explain"
+      ],
+      "summary": "性能与抽象两件套：视图（虚表）的作用与创建；索引的添加原则、四种类型、create/drop 语法、explain 与 type 等级、四种索引失效场景、聚簇与非聚簇索引的区别、BTree 与 B+Tree 的结构对比，附 14 道高频面试题。",
+      "words": 2455
+    },
+    {
+      "slug": "mysql-ch08-事务管理",
+      "title": "MySQL 笔记 · 第 8 章：事务管理",
+      "date": "2026-09-21",
+      "category": "MySQL 数据库",
+      "tags": [
+        "MySQL",
+        "数据库",
+        "学习笔记",
+        "面试题",
+        "事务",
+        "ACID",
+        "隔离级别",
+        "锁"
+      ],
+      "summary": "事务是保证业务「要么全成功、要么全失败」的机制：ACID 四大特性逐一拆解、四种隔离级别（读未提交/读已提交/可重复读/序列化）的性能与安全权衡、脏读/不可重复读/幻读三种并发问题的产生与消除，附 12 道高频面试题。",
+      "words": 1976
+    },
+    {
+      "slug": "mysql-ch09-用户权限与运维",
+      "title": "MySQL 笔记 · 第 9 章：用户权限与运维",
+      "date": "2026-09-21",
+      "category": "MySQL 数据库",
+      "tags": [
+        "MySQL",
+        "数据库",
+        "学习笔记",
+        "面试题",
+        "DCL",
+        "权限",
+        "备份恢复",
+        "运维"
+      ],
+      "summary": "收官一章讲「数据库怎么管」：mysql.user 表结构与 host 通配、创建用户/改密码/禁用启用、DCL 的 grant 与 revoke 授权模型、mysqldump 备份与恢复、以及忘记 root 密码时的 skip-grant-tables 抢救流程，附 12 道高频面试题。",
+      "words": 1977
+    },
     {
       "slug": "python-ch01-语法基础",
       "title": "Python 基础笔记 · 第 1 章：语法基础",
