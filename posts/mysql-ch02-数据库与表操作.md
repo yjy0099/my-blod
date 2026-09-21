@@ -149,11 +149,26 @@ show create database db_name;-- 建库语句
 
 能，也不完全能。MySQL 5.0 以后 `varchar(n)` 的 n 指**字符数**而非字节数，所以能存 5 个汉字。但受**行记录总长度上限（约 65535 字节）**约束，UTF-8 下一个汉字占 3 字节，实际可用字符数会受整行长度影响。
 
-**Q5：`truncate`、`drop`、`delete` 有什么区别？**
+**Q5：InnoDB 和 MyISAM 存储引擎有什么区别？怎么选？**
 
-- `delete`：DML，删**数据**，可带 where 条件，可回滚，表结构保留；
-- `truncate`：DDL，清空**全部数据**，不能带条件，不可回滚，表结构保留；
-- `drop`：DDL，连**表结构**一起删掉，表不存在了。
+| 对比项 | InnoDB | MyISAM |
+| --- | --- | --- |
+| 事务 | **支持（ACID）** | 不支持 |
+| 锁粒度 | **行级锁** | 表级锁 |
+| 外键 | **支持** | 不支持 |
+| 崩溃恢复 | 有 redo/undo 日志，**可恢复** | 容易丢失/损坏数据 |
+| 全文索引 | 5.6+ 支持 | 支持（较早） |
+| 计数 | `count(*)` 需实时扫描索引 | 内置计数器，`count(*)` 极快 |
+| 适用 | 绝大多数业务，**默认引擎** | 只读报表、日志归档等老场景 |
+
+选型结论：**无脑选 InnoDB**。MyISAM 只在「只读、几乎不写、不需要事务」的极少数历史场景才考虑，新项目不要用。
+
+```sql
+show engines;                                   -- 查看支持的引擎
+show table status like 'student';               -- 查看某表用的引擎
+create table t(...) engine=InnoDB;              -- 建表时指定
+alter table t engine=InnoDB;                    -- 改引擎
+```
 
 **Q6：`modify` 和 `change` 的区别？**
 

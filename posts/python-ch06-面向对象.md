@@ -3,7 +3,7 @@ title: Python 基础笔记 · 第 6 章：面向对象
 date: 2026-09-03
 category: Python 基础
 tags: [Python, 学习笔记, 面试题, 面向对象, 魔术方法, 设计原则]
-summary: 类属性与实例属性的陷阱、三种方法类型、私有化与 property、MRO 与 super 的协作机制、常用魔术方法、单例模式与元类、dataclass 样板消除，以及封装继承多态、抽象基类、反射等高频考点，附 24 道面试题。
+summary: 类属性与实例属性的陷阱、三种方法类型、私有化与 property、MRO 与 super 的协作机制、常用魔术方法、单例模式与元类、dataclass 样板消除，以及封装继承多态、抽象基类、反射等高频考点，附 25 道面试题。
 ---
 
 ## 一、类与实例
@@ -1301,6 +1301,25 @@ print(callable(c))        # True
 **Q24：为什么设计上常说「组合优于继承」？**
 
 继承是**编译期/定义期**绑定的强耦合：父类一改，所有子类都受影响；多层继承还会带来 MRO 复杂度和「脆弱基类」问题。组合在**运行期**装配，耦合更松、更易替换与单测。经验法则：**「是一个（is-a）」用继承，「有一个（has-a）」用组合**；能用组合表达就别用继承。
+
+**Q25：`self` 是什么？为什么方法必须显式写 `self`？**
+
+`self` 就是**调用该方法的实例本身**，由 Python 在调用时**自动传入**，但**定义时必须显式写出**。`obj.method(a)` 实际上等价于 `Class.method(obj, a)`——`self` 只是形参名（约定俗成叫 `self`，你也可以叫别的，但不建议）。
+
+```python
+class Dog:
+    def __init__(self, name):
+        self.name = name        # self 指向即将创建的那个实例
+
+    def bark(self):
+        return f'{self.name} 在叫'
+
+d = Dog('旺财')
+print(d.bark())        # 旺财 在叫
+print(Dog.bark(d))     # 等价写法：旺财 在叫
+```
+
+为什么要显式写：Python 不加 `self` 就无法区分「调用实例方法」和「调用模块里的普通函数」，显式形参让**方法绑定过程完全透明**（对比 Java 的隐式 `this`）。注意：`@staticmethod` 装饰的方法**没有** `self`；`@classmethod` 收到的是**类** `cls` 而不是实例。
 
 ---
 

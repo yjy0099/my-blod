@@ -3,7 +3,7 @@ title: Python 基础笔记 · 第 3 章：函数
 date: 2026-09-03
 category: Python 基础
 tags: [Python, 学习笔记, 面试题, 函数, 装饰器, 生成器]
-summary: 参数传递机制、五种类别形参与解包、LEGB 作用域、闭包与延迟绑定陷阱、函数五种角色（任务型/生产型/消费型/功能型/断言型）、装饰器原理与手写模板、lambda 与高阶函数、生成器迭代器与函数注解，附 21 道高频面试题。
+summary: 参数传递机制、五种类别形参与解包、LEGB 作用域、闭包与延迟绑定陷阱、函数五种角色（任务型/生产型/消费型/功能型/断言型）、装饰器原理与手写模板、lambda 与高阶函数、生成器迭代器与函数注解，附 23 道高频面试题。
 ---
 
 ## 一、参数：五种类别与书写顺序
@@ -531,11 +531,24 @@ def fib(n):
 
 限制：**被缓存的参数必须可哈希**（不能是 list/dict）；缓存会占内存，`maxsize=None` 是无界缓存；有副作用的函数不要缓存。
 
-**Q19：`global` 和 `nonlocal` 的区别？**
+**Q19：`return` 和 `yield` 的区别？**
 
-- `global x`：声明 `x` 是**模块级全局变量**，函数内可读写全局的那个；
-- `nonlocal x`：声明 `x` 属于**外层嵌套函数**的作用域（闭包变量），用于在闭包里修改外层变量；
-- 两者都只在**需要「修改」**时才声明，只读不需要；`nonlocal` **不能**指向全局变量。
+- `return`：结束函数并**返回一个值**，函数内的局部状态全部销毁；
+- `yield`：**暂停**函数并交出一个值，下次 `next()` 从暂停处**继续执行**，局部变量全部保留。
+
+```python
+def gen():
+    print('开始')
+    yield 1          # 暂停在这里
+    print('继续')
+    yield 2
+
+g = gen()
+print(next(g))       # 开始 / 1
+print(next(g))       # 继续 / 2
+```
+
+只要函数体里出现 `yield`，它就不再是普通函数，而是**生成器函数**——调用它不会执行函数体，只返回一个生成器对象。所以「用 `return` 的函数」一次性算完所有结果，「用 `yield` 的函数」可以**惰性、逐个**产出，适合大数据量或无限序列。
 
 **Q20：函数默认参数在什么时候求值？为什么这很重要？**
 
@@ -567,6 +580,69 @@ print(square(5))     # 25
 ```
 
 常用于回调、统一的日志调用、把多参数函数适配成单参数函数。它不改原函数，只是包一层默认值。
+
+**Q22：Python 中装饰器是什么？有什么用？**
+
+装饰器本质是一个**接收函数（或类）并返回新可调用对象**的函数，用 `@decorator` 的语法糖贴在目标函数上方。它的作用是**在不修改原函数代码的前提下，为它增加额外行为**——这就是「无侵入式增强」。
+
+```python
+import time
+from functools import wraps
+
+def timer(func):
+    @wraps(func)                 # 保留原函数的 __name__ / __doc__
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        result = func(*args, **kwargs)     # 调用原函数
+        print(f'{func.__name__} 耗时 {time.perf_counter() - start:.4f}s')
+        return result
+    return wrapper
+
+@timer
+def work(n):
+    return sum(range(n))
+
+work(1_000_000)
+```
+
+`@timer` 等价于 `work = timer(work)`。**原理是「闭包 + 函数是一等公民」**：函数可以像普通值一样被传递和返回，装饰器就利用这一点把原函数包起来。
+
+常见用途：**日志记录、性能计时、权限校验、结果缓存（`lru_cache`）、失败重试、事务包裹**。要传参的装饰器需要再套一层（三层嵌套），且务必加 `@wraps`，否则被装饰函数的名字和文档会丢失，调试和依赖函数名的框架都会出问题。
+
+**Q23：迭代器和生成器的区别？**
+
+- **迭代器（iterator）**：实现了 `__iter__()` 和 `__next__()` 的对象，能用 `next()` 逐个取值，取完抛 `StopIteration`。
+- **生成器（generator）**：用 `yield` 或**生成器表达式** `(x for x in ...)` 创建的对象，是「用更简单语法写出来的迭代器」。
+
+**两者关系：生成器一定是迭代器，迭代器不一定是生成器。**
+
+| 对比 | 迭代器 | 生成器 |
+| --- | --- | --- |
+| 怎么来 | 自定义类实现 `__iter__`/`__next__`，或 `iter(可迭代对象)` | 含 `yield` 的函数、生成器表达式 |
+| 写法 | 要写一个类，略繁琐 | `yield` 一行搞定 |
+| 内存 | 惰性，O(1) | 惰性，O(1) |
+| 能否重复遍历 | 不能，只能消费一次 | 不能，只能消费一次 |
+
+```python
+# 迭代器：自定义类
+class Countdown:
+    def __init__(self, n): self.n = n
+    def __iter__(self): return self
+    def __next__(self):
+        if self.n <= 0: raise StopIteration
+        self.n -= 1
+        return self.n + 1
+
+# 生成器：同样的事情，一个 yield 就够
+def countdown(n):
+    while n > 0:
+        yield n
+        n -= 1
+
+print(list(countdown(3)))     # [3, 2, 1]
+```
+
+要点：`for` 循环里其实是自动调用 `iter()` 拿迭代器、再不断 `next()`，所以**任何可迭代对象都能被 `for` 遍历**；而生成器只能遍历一次，遍历完再遍历就是空的。
 
 ---
 

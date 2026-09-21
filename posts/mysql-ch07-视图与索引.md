@@ -3,7 +3,7 @@ title: MySQL 笔记 · 第 7 章：视图与索引
 date: 2026-09-21
 category: MySQL 数据库
 tags: [MySQL, 数据库, 学习笔记, 面试题, 视图, 索引, B+Tree, explain]
-summary: 性能与抽象两件套：视图（虚表）的作用与创建；索引的添加原则、四种类型、create/drop 语法、explain 与 type 等级、四种索引失效场景、聚簇与非聚簇索引的区别、BTree 与 B+Tree 的结构对比，附 14 道高频面试题。
+summary: 性能与抽象两件套：视图（虚表）的作用与创建；索引的添加原则、四种类型、create/drop 语法、explain 与 type 等级、四种索引失效场景、聚簇与非聚簇索引的区别、BTree 与 B+Tree 的结构对比，以及慢查询定位与 explain 执行计划分析，附 16 道高频面试题。
 ---
 
 ## 一、必须记住的知识点
@@ -198,7 +198,51 @@ show index from t;          -- 查看表上的索引
 
 **Q14：主键索引和唯一索引的区别？**
 
-主键索引**唯一且非空**，一张表只能有一个，且是聚簇索引；唯一索引**唯一但允许 null**（多个 null 不冲突），一张表可以有多个，属于非聚簇索引（若表无主键，第一个唯一索引可被选为聚簇索引）。
+主键索引**唯一且非空**，一张表只能有一个，且是聚簇索引；唯一索引**唯一但允许 null**（多个 null 不冲突），一张表可以有很多个，属于非聚簇索引（若表无主键，第一个唯一索引可被选为聚簇索引）。
+
+**Q15：慢查询怎么定位和优化？**
+
+**定位**：开启慢查询日志，找出执行时间超过阈值的 SQL。
+
+```sql
+-- 查看慢查询相关参数
+show variables like 'slow_query%';
+show variables like 'long_query_time';
+
+-- 临时开启（重启失效；永久生效要写 my.ini 的 [mysqld] 段）
+set global slow_query_log = 'ON';
+set global long_query_time = 1;          -- 超过 1 秒记入慢日志
+set global log_queries_not_using_indexes = 'ON';
+```
+
+然后从慢日志里挑出耗时最高的 SQL，用 `explain` 分析执行计划。
+
+**优化优先级（从收益最大到最小）**：
+
+1. **加/改索引**：`where`、`order by`、`join on` 的字段建索引，注意最左前缀；
+2. **改写 SQL**：避免 `select *`、前模糊、字段上套函数、`or` 不走索引；
+3. **减少数据量**：分页优化（游标法）、加更精准的过滤条件、只取需要的列；
+4. **表结构/架构**：合适的字段类型、必要的反范式冗余、读写分离、分库分表；
+5. **业务层**：加缓存（Redis）、异步化、限流。
+
+> 原则是「**先定位再优化**」——不要凭感觉加索引，用慢日志和 `explain` 拿数据说话。
+
+**Q16：`explain` 结果里重点看哪几列？**
+
+| 列 | 看什么 | 好的表现 | 坏的表现 |
+| --- | --- | --- | --- |
+| `type` | 访问类型 | `const`/`eq_ref`/`ref`/`range` | **`ALL`（全表扫描）**、`index` |
+| `key` | 实际用到的索引 | 命中预期索引 | `NULL`（没用索引） |
+| `rows` | 预估扫描行数 | 越小越好 | 接近总行数 |
+| `Extra` | 额外信息 | `Using index`（覆盖索引） | `Using filesort`、`Using temporary` |
+
+```sql
+explain select * from tb_order where user_id = 100 and status = 1;
+```
+
+最需要警惕的两个信号是 **`type=ALL`**（全表扫描）和 **`Extra=Using filesort`**（额外排序）。`type` 的性能排序是 `system > const > eq_ref > ref > range > index > all`。
+
+---
 
 ## 四、易错点
 

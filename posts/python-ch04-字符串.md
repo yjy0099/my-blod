@@ -748,26 +748,18 @@ for w in text.split():
 print(d['the'])                         # => 3
 ```
 
-**Q9：如何判断一个字符串是不是回文？**
+**Q9：`lower()` 和 `casefold()` 有什么区别？**
+
+`lower()` 只做基础的**小写映射**；`casefold()` 做**更激进的大小写折叠**，专门用于「忽略大小写的比较」，能正确处理德语 `ß`、希腊语等特殊字符。
 
 ```python
-def is_palindrome(s):
-    s = ''.join(c for c in s.lower() if c.isalnum())    # 忽略大小写与标点
-    return s == s[::-1]
-
-print(is_palindrome('A man, a plan, a canal: Panama'))   # => True
-
-# 双指针版本：不额外建串，空间 O(1)
-def is_palindrome2(s):
-    i, j = 0, len(s) - 1
-    while i < j:
-        if s[i] != s[j]:
-            return False
-        i, j = i + 1, j - 1
-    return True
-
-print(is_palindrome2('abba'))                            # => True
+print('STRASSE'.lower())              # strasse
+print('straße'.casefold())            # strasse     ß 被折叠成 ss
+print('straße'.lower() == 'STRASSE'.lower())    # False
+print('straße'.casefold() == 'STRASSE'.casefold())  # True
 ```
+
+结论：**做大小写不敏感的比较/校验时用 `casefold()`**，普通展示用 `lower()`。
 
 **Q10：三引号的作用？**
 
@@ -811,14 +803,22 @@ s = 'abracadabra'
 print(''.join(dict.fromkeys(s)))    # => abrcd   dict 从 3.7 起有序
 ```
 
-**Q16：怎么判断两个字符串是否为字母异位词（anagram）？**
+**Q16：`ord` 和 `chr` 怎么用？什么是 Unicode 码点？**
+
+每个字符在 Unicode 标准里都有一个编号，叫**码点（code point）**。`ord(c)` 取字符的码点（**整数**），`chr(n)` 把码点还原成字符，二者互为逆运算。
 
 ```python
-from collections import Counter
-a, b = 'listen', 'silent'
-print(sorted(a) == sorted(b))        # => True   O(n log n)
-print(Counter(a) == Counter(b))      # => True   O(n)
+print(ord('A'))       # 65
+print(ord('中'))      # 20013
+print(chr(65))        # 'A'
+print(chr(20013))     # '中'
+
+# 常用小技巧：字符与数字互转、生成字母表
+print([chr(i) for i in range(ord('a'), ord('e') + 1)])   # ['a','b','c','d','e']
+print(ord('5') - ord('0'))     # 5   字符数字 → 整数
 ```
+
+注意区分三个概念：**码点**（Unicode 编号，与编码无关）、**编码**（UTF-8/GBK 把码点变成字节）、**字节长度**（`len('中'.encode())` 是 3，但 `len('中')` 是 1）。想按码点排序或判断字符范围（如是否中文）时就会用到 `ord`。
 
 **Q17：base64 是什么？它和加密有什么区别？**
 

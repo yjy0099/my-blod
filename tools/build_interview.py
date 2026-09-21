@@ -182,6 +182,12 @@ def extract_from_interviews():
     return questions
 
 
+def question_key(text):
+    """把题干归一化成去重键：去掉标点、空白、大小写与 markdown 标记。"""
+    plain = re.sub(r'[`*_>#\[\]()]', '', str(text or '')).lower()
+    return re.sub(r'[\s\u3000，。？！、：；,.:;!?\-—/\\|"\'“”‘’]+', '', plain)
+
+
 def main():
     if not os.path.isdir(INTERVIEWS_DIR):
         print('[x] 目录不存在: %s' % INTERVIEWS_DIR)
@@ -189,12 +195,20 @@ def main():
 
     questions = extract_from_posts() + extract_from_interviews()
 
-    seen, unique = set(), []
+    seen_id, seen_text = set(), {}
+    unique = []
     for item in questions:
-        if item['id'] in seen:
+        if item['id'] in seen_id:
             print('    [警告] 重复 id 已跳过: %s' % item['id'])
             continue
-        seen.add(item['id'])
+        seen_id.add(item['id'])
+
+        key = question_key(item['question'])
+        if key and key in seen_text:
+            print('    [跳过重复题] %s（与 %s 重复）' % (item['question'][:32], seen_text[key]))
+            continue
+        if key:
+            seen_text[key] = item['id']
         unique.append(item)
 
     unique.sort(key=lambda q: (q['category'], q['topic'], q['source'], q['id']))

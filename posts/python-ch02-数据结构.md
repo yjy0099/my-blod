@@ -392,13 +392,22 @@ key 必须**可哈希**。list 是可变对象，没有实现 `__hash__`（返�
 
 Python 3.7 起**保证插入顺序**（3.6 是 CPython 的实现细节）。底层用"稀疏索引表 + 紧凑 entries 数组"，既省内存又保序。
 
-**Q4：如何给列表去重并保持原有顺序？**
+**Q4：`del`、`remove`、`pop` 删除列表元素有什么区别？**
+
+| 写法 | 依据 | 找不到时 | 返回值 |
+| --- | --- | --- | --- |
+| `del lst[i]` | 索引（可切片批量删） | `IndexError` | 无 |
+| `lst.pop(i=-1)` | 索引，默认删最后一个 | `IndexError` | **被删的元素** |
+| `lst.remove(x)` | **值**（删第一个匹配） | `ValueError` | 无 |
 
 ```python
-list(dict.fromkeys(lst))        # 最简洁，O(n)
-# 或
-seen = set(); [x for x in lst if not (x in seen or seen.add(x))]
+lst = ['a', 'b', 'c', 'b']
+lst.remove('b')     # ['a', 'c', 'b']  只删第一个
+lst.pop()           # 返回 'b'，lst 变成 ['a', 'c']
+del lst[0]          # ['c']
 ```
+
+选择依据：要**按值删**用 `remove`，要**按位置删并拿到值**用 `pop`（天然适合当栈用），要**批量删**用 `del lst[1:3]` 或切片赋值。
 
 **Q5：循环中删除列表元素为什么会漏掉？**
 
@@ -419,12 +428,17 @@ a = [1]; a.extend([2, 3])   # [1, 2, 3]    逐个元素追加
 
 三行指向**同一个**内层列表，改一个全变。正确写法：`[[0] * 3 for _ in range(3)]`。
 
-**Q9：如何找出列表中出现次数最多的元素？**
+**Q9：列表反转有哪几种方式？`reverse()` 和 `reversed()` 有什么区别？**
 
 ```python
-from collections import Counter
-Counter(lst).most_common(1)      # [('a', 3)]
+lst = [1, 2, 3]
+
+lst.reverse()          # 原地反转，返回 None（所以 b = lst.reverse() 是坑）
+list(reversed(lst))    # 返回反转后的迭代器，不改原列表
+lst[::-1]              # 切片生成新列表，最常用
 ```
+
+区别要点：`reverse()` 是 **list 的方法**，原地修改、无返回值；`reversed()` 是**内置函数**，对任何序列都能用，返回**惰性迭代器**、不改原数据；`[::-1]` 也是生成新对象，三者复杂度都是 O(n)。需要**反转并同时保留原数据**时用后两者。
 
 **Q10：dict 的 `get` 和 `[]` 取值有何不同？**
 
@@ -434,17 +448,52 @@ Counter(lst).most_common(1)      # [('a', 3)]
 
 底层都是哈希表，平均 O(1)；代价是占内存更多、set 无序（3.7+ dict 保序）。
 
-**Q12：浅拷贝和深拷贝的区别？什么时候必须用深拷贝？**
+**Q12：列表推导式和生成器表达式有什么区别？各自适合什么场景？**
 
-浅拷贝只复制最外层，内层元素共享；深拷贝递归复制全部层级。只要容器里**嵌套了可变对象**且需要独立修改，就必须用 `copy.deepcopy`。
+```python
+nums = range(5)
+squares_list = [x * x for x in nums]      # 列表推导式：立刻算出整个列表
+squares_gen  = (x * x for x in nums)      # 生成器表达式：惰性，用到才算
+```
+
+| 对比 | 列表推导式 `[...]` | 生成器表达式 `(...)` |
+| --- | --- | --- |
+| 产出 | 完整列表，可反复遍历、可索引 | 迭代器，**只能遍历一次**、不能索引 |
+| 内存 | O(n)，一次性占用 | **O(1)**，逐个产出 |
+| 场景 | 数据量小、需要多次使用 | 数据量大 / 流式处理 / 传给 `sum`、`join` |
+
+```python
+sum(x * x for x in range(10**7))   # 生成器表达式，几乎不占内存
+```
+
+要判断「用哪个」：**只消费一次就用生成器表达式，需要保留结果就用列表推导式**。另注意字典/集合也有推导式：`{k: v for ...}`、`{x for ...}`。
 
 **Q13：`*args` 接收的是 tuple，`**kwargs` 接收的是 dict——它们能用在其他数据结构里吗？**
 
 可以：`[*lst]` 解包成列表，`{**d1, **d2}` 合并字典，`{*s}` 把集合转成元素在字典里当 key。
 
-**Q14：list 和 tuple 的区别？各自适合什么场景？**
+**Q14：`deque` 和 `list` 有什么区别？什么场景该用 `deque`？**
 
-list **可变**、有丰富的增删改方法、不可哈希；tuple **不可变**、可哈希、可作 dict 的 key，创建和遍历略快、内存占用更小。经验法则：**结构固定的记录用 tuple**（如坐标、数据库一行），**需要增删改的集合用 list**。注意 tuple 的不可变是「元素引用不可变」——`t = ([1, 2], 3)` 里的列表仍可修改。
+`list` 是**动态数组**，按下标随机访问 O(1)，但**头部插入/删除是 O(n)**（后面的元素都要整体搬移）；`collections.deque` 是**双端队列**，两端插入/删除都是 **O(1)**，但**随机访问中间元素是 O(n)**。
+
+```python
+from collections import deque
+
+dq = deque([1, 2, 3])
+dq.appendleft(0)     # O(1)   list 的 insert(0, x) 是 O(n)
+dq.popleft()         # O(1)
+dq.append(4); dq.pop()
+print(dq)            # deque([1, 2, 3])
+```
+
+选择依据：**频繁在两端增删 → `deque`**（队列、BFS、滑动窗口、最近 N 条记录）；**需要按下标随机访问或切片 → `list`**。`deque` 还能用 `maxlen` 做成固定长度的环形缓冲：
+
+```python
+recent = deque(maxlen=3)
+for i in range(5):
+    recent.append(i)     # 满了以后自动从左边挤掉最旧的
+print(recent)            # deque([2, 3, 4], maxlen=3)
+```
 
 **Q15：列表去重有哪几种方法？效率和保序性如何？**
 
@@ -474,9 +523,21 @@ CPython 的 dict 是**哈希表**（开放寻址法）。查找时先对 key 求
 
 set 同样是**哈希表**。插入元素时先算 `hash(x)` 定位桶：桶为空则放入；桶已有元素则用 `==` 逐个比较，相等就判定为重复、不插入。所以去重依赖「**哈希值不同 ⇒ 元素必不同；哈希值相同 ⇒ 再用 `==` 确认**」。这也解释了为什么 set 里的元素必须可哈希。
 
-**Q19：`list.sort()` 和 `sorted()` 有什么区别？**
+**Q19：`sorted` 的 `key` 参数怎么用？怎么按多个字段排序？**
 
-`list.sort()` 是**原地排序**，返回 `None`（所以 `b = a.sort()` 是个经典坑）；`sorted(iterable)` 返回**新列表**，原对象不变，可作用于任何可迭代对象（tuple、dict、生成器）。两者都**稳定**，底层都是 Timsort，均支持 `key=` 和 `reverse=`。
+`key` 接收一个函数，排序时**拿它的返回值比较**，而不是直接比较元素：
+
+```python
+words = ['bb', 'a', 'ccc']
+sorted(words, key=len)                 # ['a', 'bb', 'ccc']      按长度
+sorted(words, key=str.lower)           # 忽略大小写
+sorted(words, key=lambda w: (len(w), w))   # 先按长度，再按字典序
+
+students = [('Tom', 90), ('Amy', 90), ('Bob', 80)]
+sorted(students, key=lambda s: (-s[1], s[0]))   # 分数降序，同分按姓名升序
+```
+
+要点：`key` 用**元组**就能表达多级排序（元组是逐个元素比较的）；`reverse=True` 会把**整个**排序反转，所以「一列升一列降」要用**取负**的技巧而不是 `reverse`；`key` 只对每个元素调用一次，比在 `cmp` 里反复比较更高效。
 
 **Q20：为什么 `in` 对 list 是 O(n)、对 set/dict 是 O(1)？怎么优化？**
 

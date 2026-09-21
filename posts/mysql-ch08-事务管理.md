@@ -3,7 +3,7 @@ title: MySQL 笔记 · 第 8 章：事务管理
 date: 2026-09-21
 category: MySQL 数据库
 tags: [MySQL, 数据库, 学习笔记, 面试题, 事务, ACID, 隔离级别, 锁]
-summary: 事务是保证业务「要么全成功、要么全失败」的机制：ACID 四大特性逐一拆解、四种隔离级别（读未提交/读已提交/可重复读/序列化）的性能与安全权衡、脏读/不可重复读/幻读三种并发问题的产生与消除，附 12 道高频面试题。
+summary: 事务是保证业务「要么全成功、要么全失败」的机制：ACID 四大特性逐一拆解、四种隔离级别（读未提交/读已提交/可重复读/序列化）的性能与安全权衡、脏读/不可重复读/幻读三种并发问题的产生与消除，以及死锁的排查与 `for update` 的当前读语义，附 14 道高频面试题。
 ---
 
 ## 一、必须记住的知识点
@@ -139,6 +139,52 @@ set session transaction isolation level repeatable read;
 **Q12：事务的持久性靠什么保证？**
 
 靠 **redo log**。事务提交时先写 redo log（WAL，Write-Ahead Logging）再落盘，即使数据库崩溃，重启后也能用 redo log 把已提交的数据重做回来，从而保证持久性。
+
+**Q13：MySQL 的死锁是怎么产生的？怎么排查和避免？**
+
+**产生**：两个（或多个）事务各自持有对方需要的锁，又互相等待对方释放，形成环路，谁也无法继续。
+
+```text
+事务 A：锁住第 1 行 → 请求第 2 行
+事务 B：锁住第 2 行 → 请求第 1 行     ← 互相等待，死锁
+```
+
+**排查**：
+
+```sql
+show engine innodb status;      -- 查看最近一次死锁详情（LATEST DETECTED DEADLOCK）
+select * from performance_schema.data_locks;      -- 当前锁等待情况（8.0）
+```
+
+**避免手段**：
+
+- **按固定顺序访问资源**（如都按主键升序更新），从根上破坏环路；
+- **缩短事务**，尽快提交，别在事务里做网络请求/等用户输入；
+- **让更新走索引**，避免行锁升级为表锁、扩大锁范围；
+- 必要时**降低隔离级别**（如读已提交减少间隙锁）；
+- 用 `select ... for update` 时**一次锁住需要的所有行**，而不是分批加锁。
+
+> InnoDB 有**死锁检测**：发现环路会主动回滚其中一个事务（通常是代价小的那个），并抛 `Deadlock found`。所以死锁不会永久卡死，但**业务代码要能处理这个异常并重试**。
+
+**Q14：`SELECT ... FOR UPDATE` 和普通 `SELECT` 有什么区别？**
+
+普通 `select` 是**快照读**（MVCC），不加锁、不阻塞别人；`select ... for update` 是**当前读 + 排他锁**，会锁住查到的行，直到事务提交，其他事务想改这些行就得等。
+
+```sql
+start transaction;
+
+-- 锁住这一行，别人改不了（别人会阻塞，直到你 commit/rollback）
+select * from tb_account where id = 1 for update;
+
+update tb_account set balance = balance - 100 where id = 1;
+commit;
+```
+
+典型用途：**「先查后改」的场景要防并发覆盖**（如扣库存、转账），必须用 `for update` 把这一行锁住，否则两个事务可能读到同一个旧值。相关的还有 `lock in share mode`（共享锁，别人可读不可写）。
+
+> 注意：`for update` 必须**走索引**，否则会锁住大量行甚至整表；它也是**当前读**，能看到别人已提交的最新数据，而不是 MVCC 快照。
+
+---
 
 ## 四、易错点
 

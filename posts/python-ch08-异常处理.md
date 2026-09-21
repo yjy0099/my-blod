@@ -3,7 +3,7 @@ title: Python 基础笔记 · 第 8 章：异常处理
 date: 2026-09-03
 category: Python 基础
 tags: [Python, 学习笔记, 面试题, 异常处理, 上下文管理器]
-summary: 异常层级结构、try/except/else/finally 的执行顺序与 finally 里的 return 陷阱、异常链 raise from、自定义异常、with 上下文管理器的实现原理，以及 logging 的 Logger/Handler/Formatter 三层模型与 dictConfig 配置实践，附 20 道高频面试题。
+summary: 异常层级结构、try/except/else/finally 的执行顺序与 finally 里的 return 陷阱、异常链 raise from、自定义异常、with 上下文管理器的实现原理，以及 logging 的 Logger/Handler/Formatter 三层模型与 dictConfig 配置实践，附 21 道高频面试题。
 ---
 
 ## 一、核心知识点
@@ -520,6 +520,27 @@ log.info('user=%s action=%s', uid, action)     # 推荐：级别不够时不做�
 **Q20：`dictConfig` 和 `fileConfig` 怎么选？**
 
 `dictConfig`（Python 3.2+）**是现在推荐的方式**：纯 Python 字典，能用代码动态生成、支持 `RotatingFileHandler` 等全部特性、可设 `disable_existing_loggers: False` 避免禁用第三方库日志。`fileConfig` 用 INI 文件，好处是改配置不用改代码，但**默认会禁用已有 logger**，边角场景容易踩坑。新项目一律用 `dictConfig`。
+
+**Q21：Python 的异常体系是怎样的？`BaseException` 和 `Exception` 有什么区别？**
+
+所有异常的根基类是 **`BaseException`**，下面分两支：
+
+- **`Exception`**：**业务代码应该捕获的**所有常规异常，如 `ValueError`、`TypeError`、`KeyError`、`IndexError`、`IOError`；
+- **`SystemExit` / `KeyboardInterrupt` / `GeneratorExit`**：直接继承 `BaseException`，代表「程序该退出了」，**不应该被业务代码吞掉**。
+
+```text
+BaseException
+├── SystemExit              # sys.exit()
+├── KeyboardInterrupt       # Ctrl+C
+├── GeneratorExit
+└── Exception               # ← 业务异常都在这支
+    ├── ValueError / TypeError / KeyError / IndexError
+    ├── OSError（IOError / FileNotFoundError）
+    ├── AttributeError / ImportError
+    └── RuntimeError ...
+```
+
+所以**永远不要写裸 `except:`**——它会连 `KeyboardInterrupt` 一起抓走，导致程序按 Ctrl+C 都退不出来。兜底请写 `except Exception:`，需要自定义异常时也**必须继承 `Exception`**，而不是 `BaseException`。
 
 ---
 

@@ -201,9 +201,19 @@ DDL：`create/drop/truncate/show/alter`；DML：`insert/update/delete`；DQL：`
 
 三部分：**database（数据库）、存储引擎、事务管理**。其中 database 又包含 table、view、index、procedure、function、trigger 六大对象。
 
-**Q10：忘记 root 密码怎么办？**
+**Q10：MySQL 8.0 相比 5.7 有哪些主要变化？**
 
-思路是「跳过权限校验启动 → 改密 → 正常重启」，详细步骤见第 9 章。核心命令是 `mysqld --skip-grant-tables`。
+| 方面 | 5.7 | 8.0 |
+| --- | --- | --- |
+| 默认认证插件 | `mysql_native_password` | `caching_sha2_password`（更安全，老驱动可能连不上） |
+| 默认字符集 | `latin1`（可按版本） | **`utf8mb4`** |
+| 窗口函数 | 不支持 | **支持** `rank()`/`row_number()` 等 |
+| CTE / 递归查询 | 不支持 | **支持 `with` / `with recursive`** |
+| 隐藏索引 | 不支持 | 支持 `invisible index`，可先隐藏再删 |
+| JSON | 支持 | 增强（`->>`、`json_table`） |
+| 数据字典 | 文件存储 | 事务化的数据字典，DDL 更原子 |
+
+最需要注意的是**认证插件的变化**：升级到 8.0 后，旧版客户端/驱动可能报认证错误，需要升级驱动或把用户改成 `mysql_native_password`。
 
 ## 四、易错点
 

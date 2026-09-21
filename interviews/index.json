@@ -1,6 +1,6 @@
 {
-  "generated": "2026-09-21 17:16:53",
-  "count": 329,
+  "generated": "2026-09-21 17:36:12",
+  "count": 337,
   "categories": [
     "MySQL",
     "Python"
@@ -295,6 +295,28 @@
       "source": "mysql-ch08-事务管理.md"
     },
     {
+      "id": "mysql-ch08-事务管理#q13",
+      "category": "MySQL",
+      "topic": "事务管理",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "MySQL 的死锁是怎么产生的？怎么排查和避免？",
+      "answer": "**产生**：两个（或多个）事务各自持有对方需要的锁，又互相等待对方释放，形成环路，谁也无法继续。\n\n```text\n事务 A：锁住第 1 行 → 请求第 2 行\n事务 B：锁住第 2 行 → 请求第 1 行     ← 互相等待，死锁\n```\n\n**排查**：\n\n```sql\nshow engine innodb status;      -- 查看最近一次死锁详情（LATEST DETECTED DEADLOCK）\nselect * from performance_schema.data_locks;      -- 当前锁等待情况（8.0）\n```\n\n**避免手段**：\n\n- **按固定顺序访问资源**（如都按主键升序更新），从根上破坏环路；\n- **缩短事务**，尽快提交，别在事务里做网络请求/等用户输入；\n- **让更新走索引**，避免行锁升级为表锁、扩大锁范围；\n- 必要时**降低隔离级别**（如读已提交减少间隙锁）；\n- 用 `select ... for update` 时**一次锁住需要的所有行**，而不是分批加锁。\n\n> InnoDB 有**死锁检测**：发现环路会主动回滚其中一个事务（通常是代价小的那个），并抛 `Deadlock found`。所以死锁不会永久卡死，但**业务代码要能处理这个异常并重试**。",
+      "source": "mysql-ch08-事务管理.md"
+    },
+    {
+      "id": "mysql-ch08-事务管理#q14",
+      "category": "MySQL",
+      "topic": "事务管理",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "`SELECT ... FOR UPDATE` 和普通 `SELECT` 有什么区别？",
+      "answer": "普通 `select` 是**快照读**（MVCC），不加锁、不阻塞别人；`select ... for update` 是**当前读 + 排他锁**，会锁住查到的行，直到事务提交，其他事务想改这些行就得等。\n\n```sql\nstart transaction;\n\n-- 锁住这一行，别人改不了（别人会阻塞，直到你 commit/rollback）\nselect * from tb_account where id = 1 for update;\n\nupdate tb_account set balance = balance - 100 where id = 1;\ncommit;\n```\n\n典型用途：**「先查后改」的场景要防并发覆盖**（如扣库存、转账），必须用 `for update` 把这一行锁住，否则两个事务可能读到同一个旧值。相关的还有 `lock in share mode`（共享锁，别人可读不可写）。\n\n> 注意：`for update` 必须**走索引**，否则会锁住大量行甚至整表；它也是**当前读**，能看到别人已提交的最新数据，而不是 MVCC 快照。",
+      "source": "mysql-ch08-事务管理.md"
+    },
+    {
       "id": "mysql-ch08-事务管理#q2",
       "category": "MySQL",
       "topic": "事务管理",
@@ -576,8 +598,8 @@
       "type": "简答",
       "difficulty": "中",
       "tags": [],
-      "question": "`truncate`、`drop`、`delete` 有什么区别？",
-      "answer": "- `delete`：DML，删**数据**，可带 where 条件，可回滚，表结构保留；\n- `truncate`：DDL，清空**全部数据**，不能带条件，不可回滚，表结构保留；\n- `drop`：DDL，连**表结构**一起删掉，表不存在了。",
+      "question": "InnoDB 和 MyISAM 存储引擎有什么区别？怎么选？",
+      "answer": "| 对比项 | InnoDB | MyISAM |\n| --- | --- | --- |\n| 事务 | **支持（ACID）** | 不支持 |\n| 锁粒度 | **行级锁** | 表级锁 |\n| 外键 | **支持** | 不支持 |\n| 崩溃恢复 | 有 redo/undo 日志，**可恢复** | 容易丢失/损坏数据 |\n| 全文索引 | 5.6+ 支持 | 支持（较早） |\n| 计数 | `count(*)` 需实时扫描索引 | 内置计数器，`count(*)` 极快 |\n| 适用 | 绝大多数业务，**默认引擎** | 只读报表、日志归档等老场景 |\n\n选型结论：**无脑选 InnoDB**。MyISAM 只在「只读、几乎不写、不需要事务」的极少数历史场景才考虑，新项目不要用。\n\n```sql\nshow engines;                                   -- 查看支持的引擎\nshow table status like 'student';               -- 查看某表用的引擎\ncreate table t(...) engine=InnoDB;              -- 建表时指定\nalter table t engine=InnoDB;                    -- 改引擎\n```",
       "source": "mysql-ch02-数据库与表操作.md"
     },
     {
@@ -642,8 +664,8 @@
       "type": "简答",
       "difficulty": "中",
       "tags": [],
-      "question": "忘记 root 密码怎么办？",
-      "answer": "思路是「跳过权限校验启动 → 改密 → 正常重启」，详细步骤见第 9 章。核心命令是 `mysqld --skip-grant-tables`。",
+      "question": "MySQL 8.0 相比 5.7 有哪些主要变化？",
+      "answer": "| 方面 | 5.7 | 8.0 |\n| --- | --- | --- |\n| 默认认证插件 | `mysql_native_password` | `caching_sha2_password`（更安全，老驱动可能连不上） |\n| 默认字符集 | `latin1`（可按版本） | **`utf8mb4`** |\n| 窗口函数 | 不支持 | **支持** `rank()`/`row_number()` 等 |\n| CTE / 递归查询 | 不支持 | **支持 `with` / `with recursive`** |\n| 隐藏索引 | 不支持 | 支持 `invisible index`，可先隐藏再删 |\n| JSON | 支持 | 增强（`->>`、`json_table`） |\n| 数据字典 | 文件存储 | 事务化的数据字典，DDL 更原子 |\n\n最需要注意的是**认证插件的变化**：升级到 8.0 后，旧版客户端/驱动可能报认证错误，需要升级驱动或把用户改成 `mysql_native_password`。",
       "source": "mysql-ch01-数据库基础与安装.md"
     },
     {
@@ -1193,7 +1215,29 @@
       "difficulty": "中",
       "tags": [],
       "question": "主键索引和唯一索引的区别？",
-      "answer": "主键索引**唯一且非空**，一张表只能有一个，且是聚簇索引；唯一索引**唯一但允许 null**（多个 null 不冲突），一张表可以有多个，属于非聚簇索引（若表无主键，第一个唯一索引可被选为聚簇索引）。",
+      "answer": "主键索引**唯一且非空**，一张表只能有一个，且是聚簇索引；唯一索引**唯一但允许 null**（多个 null 不冲突），一张表可以有很多个，属于非聚簇索引（若表无主键，第一个唯一索引可被选为聚簇索引）。",
+      "source": "mysql-ch07-视图与索引.md"
+    },
+    {
+      "id": "mysql-ch07-视图与索引#q15",
+      "category": "MySQL",
+      "topic": "视图与索引",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "慢查询怎么定位和优化？",
+      "answer": "**定位**：开启慢查询日志，找出执行时间超过阈值的 SQL。\n\n```sql\n-- 查看慢查询相关参数\nshow variables like 'slow_query%';\nshow variables like 'long_query_time';\n\n-- 临时开启（重启失效；永久生效要写 my.ini 的 [mysqld] 段）\nset global slow_query_log = 'ON';\nset global long_query_time = 1;          -- 超过 1 秒记入慢日志\nset global log_queries_not_using_indexes = 'ON';\n```\n\n然后从慢日志里挑出耗时最高的 SQL，用 `explain` 分析执行计划。\n\n**优化优先级（从收益最大到最小）**：\n\n1. **加/改索引**：`where`、`order by`、`join on` 的字段建索引，注意最左前缀；\n2. **改写 SQL**：避免 `select *`、前模糊、字段上套函数、`or` 不走索引；\n3. **减少数据量**：分页优化（游标法）、加更精准的过滤条件、只取需要的列；\n4. **表结构/架构**：合适的字段类型、必要的反范式冗余、读写分离、分库分表；\n5. **业务层**：加缓存（Redis）、异步化、限流。\n\n> 原则是「**先定位再优化**」——不要凭感觉加索引，用慢日志和 `explain` 拿数据说话。",
+      "source": "mysql-ch07-视图与索引.md"
+    },
+    {
+      "id": "mysql-ch07-视图与索引#q16",
+      "category": "MySQL",
+      "topic": "视图与索引",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "`explain` 结果里重点看哪几列？",
+      "answer": "| 列 | 看什么 | 好的表现 | 坏的表现 |\n| --- | --- | --- | --- |\n| `type` | 访问类型 | `const`/`eq_ref`/`ref`/`range` | **`ALL`（全表扫描）**、`index` |\n| `key` | 实际用到的索引 | 命中预期索引 | `NULL`（没用索引） |\n| `rows` | 预估扫描行数 | 越小越好 | 接近总行数 |\n| `Extra` | 额外信息 | `Using index`（覆盖索引） | `Using filesort`、`Using temporary` |\n\n```sql\nexplain select * from tb_order where user_id = 100 and status = 1;\n```\n\n最需要警惕的两个信号是 **`type=ALL`**（全表扫描）和 **`Extra=Using filesort`**（额外排序）。`type` 的性能排序是 `system > const > eq_ref > ref > range > index > all`。",
       "source": "mysql-ch07-视图与索引.md"
     },
     {
@@ -1533,8 +1577,8 @@
       "type": "简答",
       "difficulty": "中",
       "tags": [],
-      "question": "`global` 和 `nonlocal` 的区别？",
-      "answer": "- `global x`：声明 `x` 是**模块级全局变量**，函数内可读写全局的那个；\n- `nonlocal x`：声明 `x` 属于**外层嵌套函数**的作用域（闭包变量），用于在闭包里修改外层变量；\n- 两者都只在**需要「修改」**时才声明，只读不需要；`nonlocal` **不能**指向全局变量。",
+      "question": "`return` 和 `yield` 的区别？",
+      "answer": "- `return`：结束函数并**返回一个值**，函数内的局部状态全部销毁；\n- `yield`：**暂停**函数并交出一个值，下次 `next()` 从暂停处**继续执行**，局部变量全部保留。\n\n```python\ndef gen():\n    print('开始')\n    yield 1          # 暂停在这里\n    print('继续')\n    yield 2\n\ng = gen()\nprint(next(g))       # 开始 / 1\nprint(next(g))       # 继续 / 2\n```\n\n只要函数体里出现 `yield`，它就不再是普通函数，而是**生成器函数**——调用它不会执行函数体，只返回一个生成器对象。所以「用 `return` 的函数」一次性算完所有结果，「用 `yield` 的函数」可以**惰性、逐个**产出，适合大数据量或无限序列。",
       "source": "python-ch03-函数.md"
     },
     {
@@ -1568,6 +1612,28 @@
       "tags": [],
       "question": "什么是偏函数（`functools.partial`）？",
       "answer": "把某个函数的部分参数**预先固定**，生成一个新的可调用对象。\n\n```python\nfrom functools import partial\n\ndef power(base, exp):\n    return base ** exp\n\nsquare = partial(power, exp=2)\nprint(square(5))     # 25\n```\n\n常用于回调、统一的日志调用、把多参数函数适配成单参数函数。它不改原函数，只是包一层默认值。",
+      "source": "python-ch03-函数.md"
+    },
+    {
+      "id": "python-ch03-函数#q22",
+      "category": "Python",
+      "topic": "函数",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "Python 中装饰器是什么？有什么用？",
+      "answer": "装饰器本质是一个**接收函数（或类）并返回新可调用对象**的函数，用 `@decorator` 的语法糖贴在目标函数上方。它的作用是**在不修改原函数代码的前提下，为它增加额外行为**——这就是「无侵入式增强」。\n\n```python\nimport time\nfrom functools import wraps\n\ndef timer(func):\n    @wraps(func)                 # 保留原函数的 __name__ / __doc__\n    def wrapper(*args, **kwargs):\n        start = time.perf_counter()\n        result = func(*args, **kwargs)     # 调用原函数\n        print(f'{func.__name__} 耗时 {time.perf_counter() - start:.4f}s')\n        return result\n    return wrapper\n\n@timer\ndef work(n):\n    return sum(range(n))\n\nwork(1_000_000)\n```\n\n`@timer` 等价于 `work = timer(work)`。**原理是「闭包 + 函数是一等公民」**：函数可以像普通值一样被传递和返回，装饰器就利用这一点把原函数包起来。\n\n常见用途：**日志记录、性能计时、权限校验、结果缓存（`lru_cache`）、失败重试、事务包裹**。要传参的装饰器需要再套一层（三层嵌套），且务必加 `@wraps`，否则被装饰函数的名字和文档会丢失，调试和依赖函数名的框架都会出问题。",
+      "source": "python-ch03-函数.md"
+    },
+    {
+      "id": "python-ch03-函数#q23",
+      "category": "Python",
+      "topic": "函数",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "迭代器和生成器的区别？",
+      "answer": "- **迭代器（iterator）**：实现了 `__iter__()` 和 `__next__()` 的对象，能用 `next()` 逐个取值，取完抛 `StopIteration`。\n- **生成器（generator）**：用 `yield` 或**生成器表达式** `(x for x in ...)` 创建的对象，是「用更简单语法写出来的迭代器」。\n\n**两者关系：生成器一定是迭代器，迭代器不一定是生成器。**\n\n| 对比 | 迭代器 | 生成器 |\n| --- | --- | --- |\n| 怎么来 | 自定义类实现 `__iter__`/`__next__`，或 `iter(可迭代对象)` | 含 `yield` 的函数、生成器表达式 |\n| 写法 | 要写一个类，略繁琐 | `yield` 一行搞定 |\n| 内存 | 惰性，O(1) | 惰性，O(1) |\n| 能否重复遍历 | 不能，只能消费一次 | 不能，只能消费一次 |\n\n```python\n# 迭代器：自定义类\nclass Countdown:\n    def __init__(self, n): self.n = n\n    def __iter__(self): return self\n    def __next__(self):\n        if self.n <= 0: raise StopIteration\n        self.n -= 1\n        return self.n + 1\n\n# 生成器：同样的事情，一个 yield 就够\ndef countdown(n):\n    while n > 0:\n        yield n\n        n -= 1\n\nprint(list(countdown(3)))     # [3, 2, 1]\n```\n\n要点：`for` 循环里其实是自动调用 `iter()` 拿迭代器、再不断 `next()`，所以**任何可迭代对象都能被 `for` 遍历**；而生成器只能遍历一次，遍历完再遍历就是空的。",
       "source": "python-ch03-函数.md"
     },
     {
@@ -1962,8 +2028,8 @@
       "type": "简答",
       "difficulty": "中",
       "tags": [],
-      "question": "怎么判断两个字符串是否为字母异位词（anagram）？",
-      "answer": "```python\nfrom collections import Counter\na, b = 'listen', 'silent'\nprint(sorted(a) == sorted(b))        # => True   O(n log n)\nprint(Counter(a) == Counter(b))      # => True   O(n)\n```",
+      "question": "`ord` 和 `chr` 怎么用？什么是 Unicode 码点？",
+      "answer": "每个字符在 Unicode 标准里都有一个编号，叫**码点（code point）**。`ord(c)` 取字符的码点（**整数**），`chr(n)` 把码点还原成字符，二者互为逆运算。\n\n```python\nprint(ord('A'))       # 65\nprint(ord('中'))      # 20013\nprint(chr(65))        # 'A'\nprint(chr(20013))     # '中'\n\n# 常用小技巧：字符与数字互转、生成字母表\nprint([chr(i) for i in range(ord('a'), ord('e') + 1)])   # ['a','b','c','d','e']\nprint(ord('5') - ord('0'))     # 5   字符数字 → 整数\n```\n\n注意区分三个概念：**码点**（Unicode 编号，与编码无关）、**编码**（UTF-8/GBK 把码点变成字节）、**字节长度**（`len('中'.encode())` 是 3，但 `len('中')` 是 1）。想按码点排序或判断字符范围（如是否中文）时就会用到 `ord`。",
       "source": "python-ch04-字符串.md"
     },
     {
@@ -2116,8 +2182,8 @@
       "type": "简答",
       "difficulty": "中",
       "tags": [],
-      "question": "如何判断一个字符串是不是回文？",
-      "answer": "```python\ndef is_palindrome(s):\n    s = ''.join(c for c in s.lower() if c.isalnum())    # 忽略大小写与标点\n    return s == s[::-1]\n\nprint(is_palindrome('A man, a plan, a canal: Panama'))   # => True\n\n# 双指针版本：不额外建串，空间 O(1)\ndef is_palindrome2(s):\n    i, j = 0, len(s) - 1\n    while i < j:\n        if s[i] != s[j]:\n            return False\n        i, j = i + 1, j - 1\n    return True\n\nprint(is_palindrome2('abba'))                            # => True\n```",
+      "question": "`lower()` 和 `casefold()` 有什么区别？",
+      "answer": "`lower()` 只做基础的**小写映射**；`casefold()` 做**更激进的大小写折叠**，专门用于「忽略大小写的比较」，能正确处理德语 `ß`、希腊语等特殊字符。\n\n```python\nprint('STRASSE'.lower())              # strasse\nprint('straße'.casefold())            # strasse     ß 被折叠成 ss\nprint('straße'.lower() == 'STRASSE'.lower())    # False\nprint('straße'.casefold() == 'STRASSE'.casefold())  # True\n```\n\n结论：**做大小写不敏感的比较/校验时用 `casefold()`**，普通展示用 `lower()`。",
       "source": "python-ch04-字符串.md"
     },
     {
@@ -2506,6 +2572,17 @@
       "source": "python-ch08-异常处理.md"
     },
     {
+      "id": "python-ch08-异常处理#q21",
+      "category": "Python",
+      "topic": "异常处理",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "Python 的异常体系是怎样的？`BaseException` 和 `Exception` 有什么区别？",
+      "answer": "所有异常的根基类是 **`BaseException`**，下面分两支：\n\n- **`Exception`**：**业务代码应该捕获的**所有常规异常，如 `ValueError`、`TypeError`、`KeyError`、`IndexError`、`IOError`；\n- **`SystemExit` / `KeyboardInterrupt` / `GeneratorExit`**：直接继承 `BaseException`，代表「程序该退出了」，**不应该被业务代码吞掉**。\n\n```text\nBaseException\n├── SystemExit              # sys.exit()\n├── KeyboardInterrupt       # Ctrl+C\n├── GeneratorExit\n└── Exception               # ← 业务异常都在这支\n    ├── ValueError / TypeError / KeyError / IndexError\n    ├── OSError（IOError / FileNotFoundError）\n    ├── AttributeError / ImportError\n    └── RuntimeError ...\n```\n\n所以**永远不要写裸 `except:`**——它会连 `KeyboardInterrupt` 一起抓走，导致程序按 Ctrl+C 都退不出来。兜底请写 `except Exception:`，需要自定义异常时也**必须继承 `Exception`**，而不是 `BaseException`。",
+      "source": "python-ch08-异常处理.md"
+    },
+    {
       "id": "python-ch08-异常处理#q3",
       "category": "Python",
       "topic": "异常处理",
@@ -2803,8 +2880,8 @@
         "代码题",
         "手写代码"
       ],
-      "question": "拍平一个嵌套列表",
-      "answer": "思路：递归 + `isinstance` 判断；也可用生成器实现惰性版本。\n\n```python\ndef flatten(lst):\n    result = []\n    for item in lst:\n        if isinstance(item, list):\n            result.extend(flatten(item))\n        else:\n            result.append(item)\n    return result\n\nprint(flatten([1, [2, [3, [4, 5]], 6], 7]))\n# [1, 2, 3, 4, 5, 6, 7]\n```\n\n要点：`isinstance(item, list)` 只认 list；若要兼容 tuple/set，改用 `isinstance(item, (list, tuple, set))`。",
+      "question": "实现列表扁平化（递归）",
+      "answer": "题目：把嵌套列表 `[1, [2, [3, [4, 5]], 6], 7]` 拍平成一维列表，要求用**递归**实现。\n\n思路：递归 + `isinstance` 判断；也可用生成器实现惰性版本。\n\n```python\ndef flatten(lst):\n    result = []\n    for item in lst:\n        if isinstance(item, list):\n            result.extend(flatten(item))\n        else:\n            result.append(item)\n    return result\n\nprint(flatten([1, [2, [3, [4, 5]], 6], 7]))\n# [1, 2, 3, 4, 5, 6, 7]\n```\n\n要点：`isinstance(item, list)` 只认 list；若要兼容 tuple/set，改用 `isinstance(item, (list, tuple, set))`。",
       "source": "python-code.md"
     },
     {
@@ -2847,8 +2924,8 @@
       "type": "简答",
       "difficulty": "中",
       "tags": [],
-      "question": "浅拷贝和深拷贝的区别？什么时候必须用深拷贝？",
-      "answer": "浅拷贝只复制最外层，内层元素共享；深拷贝递归复制全部层级。只要容器里**嵌套了可变对象**且需要独立修改，就必须用 `copy.deepcopy`。",
+      "question": "列表推导式和生成器表达式有什么区别？各自适合什么场景？",
+      "answer": "```python\nnums = range(5)\nsquares_list = [x * x for x in nums]      # 列表推导式：立刻算出整个列表\nsquares_gen  = (x * x for x in nums)      # 生成器表达式：惰性，用到才算\n```\n\n| 对比 | 列表推导式 `[...]` | 生成器表达式 `(...)` |\n| --- | --- | --- |\n| 产出 | 完整列表，可反复遍历、可索引 | 迭代器，**只能遍历一次**、不能索引 |\n| 内存 | O(n)，一次性占用 | **O(1)**，逐个产出 |\n| 场景 | 数据量小、需要多次使用 | 数据量大 / 流式处理 / 传给 `sum`、`join` |\n\n```python\nsum(x * x for x in range(10**7))   # 生成器表达式，几乎不占内存\n```\n\n要判断「用哪个」：**只消费一次就用生成器表达式，需要保留结果就用列表推导式**。另注意字典/集合也有推导式：`{k: v for ...}`、`{x for ...}`。",
       "source": "python-ch02-数据结构.md"
     },
     {
@@ -2869,8 +2946,8 @@
       "type": "简答",
       "difficulty": "中",
       "tags": [],
-      "question": "list 和 tuple 的区别？各自适合什么场景？",
-      "answer": "list **可变**、有丰富的增删改方法、不可哈希；tuple **不可变**、可哈希、可作 dict 的 key，创建和遍历略快、内存占用更小。经验法则：**结构固定的记录用 tuple**（如坐标、数据库一行），**需要增删改的集合用 list**。注意 tuple 的不可变是「元素引用不可变」——`t = ([1, 2], 3)` 里的列表仍可修改。",
+      "question": "`deque` 和 `list` 有什么区别？什么场景该用 `deque`？",
+      "answer": "`list` 是**动态数组**，按下标随机访问 O(1)，但**头部插入/删除是 O(n)**（后面的元素都要整体搬移）；`collections.deque` 是**双端队列**，两端插入/删除都是 **O(1)**，但**随机访问中间元素是 O(n)**。\n\n```python\nfrom collections import deque\n\ndq = deque([1, 2, 3])\ndq.appendleft(0)     # O(1)   list 的 insert(0, x) 是 O(n)\ndq.popleft()         # O(1)\ndq.append(4); dq.pop()\nprint(dq)            # deque([1, 2, 3])\n```\n\n选择依据：**频繁在两端增删 → `deque`**（队列、BFS、滑动窗口、最近 N 条记录）；**需要按下标随机访问或切片 → `list`**。`deque` 还能用 `maxlen` 做成固定长度的环形缓冲：\n\n```python\nrecent = deque(maxlen=3)\nfor i in range(5):\n    recent.append(i)     # 满了以后自动从左边挤掉最旧的\nprint(recent)            # deque([2, 3, 4], maxlen=3)\n```",
       "source": "python-ch02-数据结构.md"
     },
     {
@@ -2924,8 +3001,8 @@
       "type": "简答",
       "difficulty": "中",
       "tags": [],
-      "question": "`list.sort()` 和 `sorted()` 有什么区别？",
-      "answer": "`list.sort()` 是**原地排序**，返回 `None`（所以 `b = a.sort()` 是个经典坑）；`sorted(iterable)` 返回**新列表**，原对象不变，可作用于任何可迭代对象（tuple、dict、生成器）。两者都**稳定**，底层都是 Timsort，均支持 `key=` 和 `reverse=`。",
+      "question": "`sorted` 的 `key` 参数怎么用？怎么按多个字段排序？",
+      "answer": "`key` 接收一个函数，排序时**拿它的返回值比较**，而不是直接比较元素：\n\n```python\nwords = ['bb', 'a', 'ccc']\nsorted(words, key=len)                 # ['a', 'bb', 'ccc']      按长度\nsorted(words, key=str.lower)           # 忽略大小写\nsorted(words, key=lambda w: (len(w), w))   # 先按长度，再按字典序\n\nstudents = [('Tom', 90), ('Amy', 90), ('Bob', 80)]\nsorted(students, key=lambda s: (-s[1], s[0]))   # 分数降序，同分按姓名升序\n```\n\n要点：`key` 用**元组**就能表达多级排序（元组是逐个元素比较的）；`reverse=True` 会把**整个**排序反转，所以「一列升一列降」要用**取负**的技巧而不是 `reverse`；`key` 只对每个元素调用一次，比在 `cmp` 里反复比较更高效。",
       "source": "python-ch02-数据结构.md"
     },
     {
@@ -2979,8 +3056,8 @@
       "type": "简答",
       "difficulty": "中",
       "tags": [],
-      "question": "如何给列表去重并保持原有顺序？",
-      "answer": "```python\nlist(dict.fromkeys(lst))        # 最简洁，O(n)\n# 或\nseen = set(); [x for x in lst if not (x in seen or seen.add(x))]\n```",
+      "question": "`del`、`remove`、`pop` 删除列表元素有什么区别？",
+      "answer": "| 写法 | 依据 | 找不到时 | 返回值 |\n| --- | --- | --- | --- |\n| `del lst[i]` | 索引（可切片批量删） | `IndexError` | 无 |\n| `lst.pop(i=-1)` | 索引，默认删最后一个 | `IndexError` | **被删的元素** |\n| `lst.remove(x)` | **值**（删第一个匹配） | `ValueError` | 无 |\n\n```python\nlst = ['a', 'b', 'c', 'b']\nlst.remove('b')     # ['a', 'c', 'b']  只删第一个\nlst.pop()           # 返回 'b'，lst 变成 ['a', 'c']\ndel lst[0]          # ['c']\n```\n\n选择依据：要**按值删**用 `remove`，要**按位置删并拿到值**用 `pop`（天然适合当栈用），要**批量删**用 `del lst[1:3]` 或切片赋值。",
       "source": "python-ch02-数据结构.md"
     },
     {
@@ -3034,8 +3111,8 @@
       "type": "简答",
       "difficulty": "中",
       "tags": [],
-      "question": "如何找出列表中出现次数最多的元素？",
-      "answer": "```python\nfrom collections import Counter\nCounter(lst).most_common(1)      # [('a', 3)]\n```",
+      "question": "列表反转有哪几种方式？`reverse()` 和 `reversed()` 有什么区别？",
+      "answer": "```python\nlst = [1, 2, 3]\n\nlst.reverse()          # 原地反转，返回 None（所以 b = lst.reverse() 是坑）\nlist(reversed(lst))    # 返回反转后的迭代器，不改原列表\nlst[::-1]              # 切片生成新列表，最常用\n```\n\n区别要点：`reverse()` 是 **list 的方法**，原地修改、无返回值；`reversed()` 是**内置函数**，对任何序列都能用，返回**惰性迭代器**、不改原数据；`[::-1]` 也是生成新对象，三者复杂度都是 O(n)。需要**反转并同时保留原数据**时用后两者。",
       "source": "python-ch02-数据结构.md"
     },
     {
@@ -3309,8 +3386,8 @@
       "type": "简答",
       "difficulty": "中",
       "tags": [],
-      "question": "什么是鸭子类型？",
-      "answer": "\"如果它走起来像鸭子、叫起来像鸭子，那它就是鸭子。\" Python 不关心对象的真实类型，只关心它有没有对应的方法（协议）。这是 Python 实现多态的核心方式。",
+      "question": "为什么说 Python 中「一切皆对象」？",
+      "answer": "因为数字、字符串、函数、类、模块，甚至类型本身，在 Python 里都是**对象**：都有类型（`type(x)`）、都有唯一标识（`id(x)`）、都可以赋值给变量、放进容器、作为参数传递。\n\n```python\nprint(type(1), type('a'), type(len), type(int))\n# <class 'int'> <class 'str'> <class 'built-in_function_or_method'> <class 'type'>\n\ndef f(): pass\nprint(f.__name__)          # 函数有属性\nprint(isinstance(f, object))   # True\nprint(isinstance(int, object)) # True  连类型也是对象\n```\n\n这一点的直接推论是：**函数是一等公民**（可作参数/返回值，这是装饰器和闭包的前提），且**变量只是贴在对象上的名字**，赋值不复制对象。",
       "source": "python-ch01-语法基础.md"
     },
     {
@@ -3430,8 +3507,8 @@
       "type": "简答",
       "difficulty": "中",
       "tags": [],
-      "question": "Python 是值传递还是引用传递？",
-      "answer": "既不是值传递也不是引用传递，而是**共享传参（call by sharing）**：传递的是「对象的引用」。对不可变对象重新赋值只是把局部名字贴到新对象，外部无感；对可变对象原地修改则外部可见。",
+      "question": "Python 中的可变类型和不可变类型分别有哪些？",
+      "answer": "- **不可变**：`int`、`float`、`bool`、`str`、`tuple`、`frozenset`、`bytes`；\n- **可变**：`list`、`dict`、`set`、`bytearray`、自定义对象（默认可变）。\n\n区分它们的意义在于：不可变对象**可哈希**（能作 dict 的 key、set 的元素）、可作为默认参数安全共享；可变对象在**函数传参、浅拷贝、默认参数**这三处最容易出意外，因为它们能被原地修改。",
       "source": "python-ch01-语法基础.md"
     },
     {
@@ -3452,8 +3529,8 @@
       "type": "简答",
       "difficulty": "中",
       "tags": [],
-      "question": "深拷贝和浅拷贝的区别？",
-      "answer": "浅拷贝只复制最外层容器，内部元素仍是同一批对象的引用；深拷贝递归复制所有层级。用 `copy.copy()` / `copy.deepcopy()`。",
+      "question": "`and` / `or` 的短路求值是怎么工作的？它们返回什么？",
+      "answer": "`and`：从左到右求值，遇到第一个假值就**停下来返回它**；全为真则返回最后一个值。\n`or`：遇到第一个真值就停下来返回它；全为假则返回最后一个值。\n\n注意它们返回的是**操作数本身**，不是 `True`/`False`，所以常被用来写默认值：\n\n```python\nprint(0 and 'x')        # 0\nprint('a' and 'b')      # b\nprint('' or 'default')  # default\nprint(None or 0 or [])  # []\n\nname = user_input or '匿名'   # 常用的兜底写法\n```\n\n短路特性还能保证安全：`if lst and lst[0] > 0` 在 `lst` 为空时不会去取下标。",
       "source": "python-ch01-语法基础.md"
     },
     {
@@ -3485,8 +3562,8 @@
       "type": "简答",
       "difficulty": "中",
       "tags": [],
-      "question": "`*args` 和 `**kwargs` 是什么？",
-      "answer": "函数定义中，`*args` 接收多余的位置参数成元组，`**kwargs` 接收多余的关键字参数成字典。参数顺序：位置 → 默认 → `*args` → 仅关键字 → `**kwargs`。",
+      "question": "Python 是解释型语言还是编译型语言？",
+      "answer": "严格说，Python 是**「先编译成字节码，再由虚拟机解释执行」**：`.py` 源码先被编译成字节码（缓存在 `__pycache__/*.pyc`），然后由 CPython 虚拟机逐条执行字节码。所以它既不是纯粹的编译型（不直接产出机器码），也不是纯粹的解释型（不是逐行解析源码）。\n\n对比：C 直接编译成机器码，启动快、运行快，但跨平台要重新编译；Python 多了一层字节码虚拟机，**跨平台、开发快**，但执行效率低于编译型语言。",
       "source": "python-ch01-语法基础.md"
     },
     {
@@ -3685,6 +3762,17 @@
       "tags": [],
       "question": "为什么设计上常说「组合优于继承」？",
       "answer": "继承是**编译期/定义期**绑定的强耦合：父类一改，所有子类都受影响；多层继承还会带来 MRO 复杂度和「脆弱基类」问题。组合在**运行期**装配，耦合更松、更易替换与单测。经验法则：**「是一个（is-a）」用继承，「有一个（has-a）」用组合**；能用组合表达就别用继承。",
+      "source": "python-ch06-面向对象.md"
+    },
+    {
+      "id": "python-ch06-面向对象#q25",
+      "category": "Python",
+      "topic": "面向对象",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "`self` 是什么？为什么方法必须显式写 `self`？",
+      "answer": "`self` 就是**调用该方法的实例本身**，由 Python 在调用时**自动传入**，但**定义时必须显式写出**。`obj.method(a)` 实际上等价于 `Class.method(obj, a)`——`self` 只是形参名（约定俗成叫 `self`，你也可以叫别的，但不建议）。\n\n```python\nclass Dog:\n    def __init__(self, name):\n        self.name = name        # self 指向即将创建的那个实例\n\n    def bark(self):\n        return f'{self.name} 在叫'\n\nd = Dog('旺财')\nprint(d.bark())        # 旺财 在叫\nprint(Dog.bark(d))     # 等价写法：旺财 在叫\n```\n\n为什么要显式写：Python 不加 `self` 就无法区分「调用实例方法」和「调用模块里的普通函数」，显式形参让**方法绑定过程完全透明**（对比 Java 的隐式 `this`）。注意：`@staticmethod` 装饰的方法**没有** `self`；`@classmethod` 收到的是**类** `cls` 而不是实例。",
       "source": "python-ch06-面向对象.md"
     },
     {
