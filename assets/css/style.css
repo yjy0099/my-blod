@@ -474,6 +474,165 @@ a:hover { color: var(--accent-hover); }
 .about-card h1 { margin: 0 0 20px; font-size: 28px; font-weight: 650; }
 .about-card .lead { color: var(--text-muted); font-size: 16.5px; }
 
+/* ---------- 面试题 ---------- */
+.iv-hero { padding: 44px 0 20px; }
+.iv-hero h1 { margin: 0 0 10px; font-size: 30px; font-weight: 650; }
+.iv-hero p { margin: 0; color: var(--text-muted); }
+
+.iv-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 22px;
+  align-items: center;
+  padding: 18px 20px;
+  margin-bottom: 22px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.iv-field { display: flex; align-items: center; gap: 10px; }
+.iv-field-grow { flex: 1 1 220px; min-width: 190px; }
+.iv-label { font-size: 14px; color: var(--text-faint); white-space: nowrap; }
+
+.iv-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.iv-chip {
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13.5px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+.iv-chip:hover { color: var(--text); border-color: var(--text-faint); }
+.iv-chip.is-active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+.iv-select, .iv-search {
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+}
+.iv-search { width: 100%; }
+.iv-select:focus, .iv-search:focus { outline: none; border-color: var(--accent); }
+
+.iv-btn {
+  padding: 7px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+.iv-btn:hover { color: var(--text); border-color: var(--text-faint); background: var(--bg-soft); }
+
+.iv-count { margin: 0 2px 14px; font-size: 14px; color: var(--text-faint); }
+
+.iv-list { display: flex; flex-direction: column; gap: 12px; padding-bottom: 24px; }
+
+.iv-card {
+  padding: 16px 20px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  background: var(--surface);
+  transition: border-color .15s ease;
+}
+.iv-card:hover { border-color: var(--border); }
+.iv-card.is-open { border-color: var(--accent); }
+
+.iv-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.iv-main { min-width: 0; }
+.iv-q { font-size: 16px; color: var(--text); }
+.iv-q p { margin: 0; }
+
+.iv-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.iv-badge {
+  padding: 1px 8px;
+  border-radius: 5px;
+  font-size: 12px;
+  line-height: 1.7;
+  white-space: nowrap;
+}
+.iv-badge-cat { background: var(--bg-soft); color: var(--text-muted); }
+.iv-badge-short { background: var(--accent-soft); color: var(--accent); }
+.iv-badge-code { background: #fff4e5; color: #9a5b00; }
+[data-theme="dark"] .iv-badge-code { background: #33260f; color: #f0b357; }
+.iv-badge-topic { border: 1px solid var(--border-soft); color: var(--text-faint); }
+.iv-badge-tag { color: var(--text-faint); }
+
+.iv-toggle {
+  flex: none;
+  padding: 5px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 13.5px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.iv-toggle:hover { border-color: var(--accent); background: var(--accent-soft); }
+
+.iv-ans { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--border); }
+.iv-ans-inner { font-size: 15.5px; color: var(--text-muted); line-height: 1.75; }
+.iv-ans-inner > :first-child { margin-top: 0; }
+.iv-ans-inner > :last-child { margin-bottom: 0; }
+.iv-ans-inner p { margin: 0 0 12px; }
+.iv-ans-inner ul, .iv-ans-inner ol { margin: 0 0 12px; padding-left: 24px; }
+.iv-ans-inner li { margin: 4px 0; }
+.iv-ans-inner blockquote {
+  margin: 14px 0;
+  padding: 4px 16px;
+  border-left: 3px solid var(--accent);
+  background: var(--bg-soft);
+  border-radius: 0 8px 8px 0;
+}
+.iv-ans-inner blockquote p:last-child { margin-bottom: 0; }
+.iv-ans-inner code {
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: var(--code-bg);
+  border: 1px solid var(--border-soft);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: .88em;
+  color: var(--accent);
+  word-break: break-word;
+}
+.iv-ans-inner pre {
+  margin: 14px 0;
+  padding: 16px 18px;
+  overflow-x: auto;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  background: var(--code-bg);
+  line-height: 1.65;
+}
+.iv-ans-inner pre code { padding: 0; border: 0; background: none; color: var(--text); font-size: 13.5px; }
+.iv-ans-inner h2, .iv-ans-inner h3, .iv-ans-inner h4 { margin: 18px 0 8px; font-size: 15.5px; color: var(--text); }
+.iv-ans-inner table { width: 100%; margin: 14px 0; border-collapse: collapse; font-size: 14.5px; }
+.iv-ans-inner th, .iv-ans-inner td { padding: 8px 12px; border: 1px solid var(--border); text-align: left; }
+.iv-ans-inner th { background: var(--bg-soft); font-weight: 600; }
+
+.iv-more-wrap { display: flex; justify-content: center; padding-bottom: 60px; }
+.iv-more { padding: 9px 22px; }
+
+@media (max-width: 700px) {
+  .iv-hero { padding: 32px 0 16px; }
+  .iv-toolbar { padding: 14px 16px; gap: 12px 16px; }
+  .iv-top { flex-direction: column; gap: 10px; }
+  .iv-toggle { align-self: flex-start; }
+}
+
 /* ---------- 页脚 ---------- */
 .site-footer {
   padding: 28px 0 40px;

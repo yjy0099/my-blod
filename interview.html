@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>文章 · YJY的博客</title>
+<title>面试题 · YJY的博客</title>
+<meta name="description" content="Python 与 MySQL 面试题库：简答题与代码题，先自测再展开答案">
 <link rel="stylesheet" href="assets/css/style.css?v=3">
 <script>
 /* 首屏前确定主题，避免刷新时闪白 */
@@ -25,7 +26,7 @@
     <a class="brand" href="index.html">YJY<span class="dot">.</span>blog</a>
     <nav class="site-nav">
       <a href="index.html">首页</a>
-      <a href="interview.html">面试题</a>
+      <a href="interview.html" class="active">面试题</a>
       <a href="about.html">关于我</a>
       <button class="theme-btn" type="button" data-theme-toggle data-current="light" aria-label="切换主题">
         <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -41,13 +42,39 @@
 </header>
 
 <main class="container">
-  <article class="article">
-    <a class="back-link" href="index.html">← 返回文章列表</a>
-    <div id="article-root">
-      <div class="empty">正在加载文章…</div>
+  <section class="hero iv-hero">
+    <h1>面试题</h1>
+    <p>Python 与 MySQL 的简答题和代码题，先自己答一遍，再点「查看答案」对答案。<span id="iv-stat"></span></p>
+  </section>
+
+  <div class="iv-toolbar">
+    <div class="iv-field">
+      <span class="iv-label">分类</span>
+      <div class="iv-chips" id="iv-cat"></div>
     </div>
-    <nav class="post-nav" id="post-nav"></nav>
-  </article>
+    <div class="iv-field">
+      <span class="iv-label">类型</span>
+      <div class="iv-chips" id="iv-type"></div>
+    </div>
+    <div class="iv-field">
+      <span class="iv-label">主题</span>
+      <select id="iv-topic" class="iv-select"></select>
+    </div>
+    <div class="iv-field iv-field-grow">
+      <input type="search" id="iv-search" class="iv-search" placeholder="搜索题目关键词，如：索引、闭包、分页" autocomplete="off">
+    </div>
+    <div class="iv-field">
+      <button class="iv-btn" id="iv-toggle-all" type="button">全部展开</button>
+    </div>
+  </div>
+
+  <div class="iv-count" id="iv-count"></div>
+  <div class="iv-list" id="iv-list">
+    <div class="empty">正在加载题库…</div>
+  </div>
+  <div class="iv-more-wrap">
+    <button class="iv-btn iv-more" id="iv-more" type="button" hidden>加载更多</button>
+  </div>
 </main>
 
 <footer class="site-footer">
@@ -60,7 +87,7 @@
 <script src="assets/js/theme.js?v=3"></script>
 <button class="backTop" type="button" aria-label="回到顶部" title="回到顶部">↑</button>
 
-<script src="assets/js/post.js?v=3"></script>
+<script src="assets/js/interview.js?v=3"></script>
 <script src="assets/js/backtop.js?v=3"></script>
 </body>
 </html>
