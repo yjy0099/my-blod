@@ -3,7 +3,7 @@ title: Python 基础笔记 · 第 5 章：正则表达式
 date: 2026-09-03
 category: Python 基础
 tags: [Python, 学习笔记, 面试题, 正则表达式, re 模块]
-summary: re 模块全部核心 API、元字符与量词速查、贪婪与非贪婪、分组与命名分组、常用正则模板（手机/邮箱/URL/IP/中文），以及灾难性回溯这类性能陷阱。
+summary: re 模块全部核心 API、元字符与量词速查、贪婪与非贪婪、分组与命名分组、常用正则模板（手机/邮箱/URL/IP/中文）、灾难性回溯这类性能陷阱，以及 pip 镜像源、requests 发请求与包导入机制，附 22 道高频面试题。
 ---
 
 ## 一、re 模块核心 API
@@ -572,7 +572,104 @@ print(re.sub(r'(?<=[a-z0-9])(?=[A-Z])', '_', 'getUserName').lower())   # => get_
 
 ---
 
-## 六、高频面试题
+## 六、工程补充：pip 镜像源、requests 与包
+
+正则的典型搭档是「抓取文本 → 清洗 → 提取」，所以补上实际写代码绕不开的三件事。
+
+### 1. pip 镜像源配置
+
+国内直连 PyPI 经常超时，换成国内镜像是标准做法。
+
+```bash
+# 临时使用（单次生效）
+pip install requests -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+# 永久配置（推荐，写入 pip 配置文件）
+pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+
+# 查看当前配置
+pip config list
+```
+
+| 镜像 | 地址 |
+| --- | --- |
+| 清华 TUNA | `https://pypi.tuna.tsinghua.edu.cn/simple` |
+| 阿里云 | `https://mirrors.aliyun.com/pypi/simple/` |
+| 中科大 | `https://pypi.mirrors.ustc.edu.cn/simple/` |
+
+### 2. requests：发 HTTP 请求
+
+`requests` 是第三方库，需先 `pip install requests`（标准库的 `urllib` 难用得多）。
+
+```python
+import requests
+
+# GET 带查询参数
+resp = requests.get(
+    'https://httpbin.org/get',
+    params={'q': 'python', 'page': 1},
+    headers={'User-Agent': 'Mozilla/5.0'},
+    timeout=5,
+)
+
+print(resp.status_code)     # 200
+print(resp.url)             # 实际请求的完整 URL（参数已编码）
+print(resp.text)            # 响应文本（str）
+print(resp.json())          # 若响应是 JSON，直接解析成 dict
+
+# POST 提交表单 / JSON
+requests.post('https://httpbin.org/post', data={'a': 1}, timeout=5)
+requests.post('https://httpbin.org/post', json={'a': 1}, timeout=5)
+```
+
+**要点与坑：**
+
+- **一定要写 `timeout`**：默认不超时，网络卡住会让程序永久挂起；
+- 用 `resp.raise_for_status()` 让 4xx/5xx 直接抛异常，而不是拿到错误页面继续解析；
+- `resp.encoding` 可能猜错导致中文乱码，明确设 `resp.encoding = 'utf-8'`，或直接用 `resp.content.decode('utf-8')`；
+- `resp.text` 是解码后的 `str`，`resp.content` 是原始 `bytes`（下载文件/图片用它）；
+- 需要保持登录态（复用 Cookie）用 `requests.Session()`。
+
+```python
+session = requests.Session()
+session.headers.update({'User-Agent': 'Mozilla/5.0'})
+session.get('https://example.com/login', timeout=5)
+
+resp = session.get('https://example.com/profile', timeout=5)
+resp.raise_for_status()
+```
+
+> 抓到页面后用 `re` 或 `BeautifulSoup` 提取字段；但**优先用官方 API**——抓页面容易因改版失效，也要遵守目标站的 robots 协议与相关法规。
+
+### 3. 模块与包：导入机制
+
+- **模块（module）**：一个 `.py` 文件；
+- **包（package）**：一个含 `__init__.py` 的目录，用来组织多个模块。
+
+```python
+import os                     # 导入模块
+from os import path           # 只导入其中某个名字
+from os import path as p      # 起别名
+from urllib.parse import urlencode
+
+# 包内模块：xyz/qikux/test.py
+import xyz.qikux.test
+from xyz.qikux import test as t
+```
+
+`__init__.py` 的三个作用：
+
+1. 让 Python 把这个目录识别为**包**（Python 3 的命名空间包可省略它，但显式保留更稳妥）；
+2. 写包的初始化代码，或对外暴露快捷导入（`from .core import main`）；
+3. 定义 `__all__` 控制 `from package import *` 的行为。
+
+**绝对导入 vs 相对导入**：绝对导入写完整路径（`from xyz.qikux import test`），清晰、推荐；相对导入用点号表示层级（`from . import utils`、`from ..core import base`），只在包内部可用，**不能在顶层脚本里用**。
+
+> `__init__.py` 在**首次导入包时执行一次**，别在里面写耗时操作或有副作用的代码。
+
+---
+
+## 七、高频面试题
 
 **Q1：`re.match` 和 `re.search` 的区别？**
 
@@ -665,9 +762,74 @@ re.sub(r'<[^>]+>', '', html)
 
 `re` 模块实现要求后顾长度固定，才能确定往左回看几个字符。`(?<=\d+)` 长度不定，因此非法。解决办法：改用前瞻重构表达式，或先捕获再取 `group`。
 
+**Q17：命名分组 `(?P<name>...)` 比编号分组好在哪？**
+
+编号分组靠 `\1`、`group(1)` 引用，正则一改顺序就全乱；命名分组用 `(?P<year>\d{4})` 定义，可用 `group('year')` 或 `(?P=year)` 后向引用，**语义自解释、改结构不易错**。
+
+```python
+import re
+
+m = re.match(r'(?P<y>\d{4})-(?P<m>\d{2})-(?P<d>\d{2})', '2026-09-21')
+print(m.group('y'), m.groupdict())    # 2026 {'y': '2026', 'm': '09', 'd': '21'}
+```
+
+**Q18：`re.escape` 有什么用？**
+
+把字符串里的**正则元字符全部转义**，让它变回「普通文本」。用于「用户输入要当作字面量去匹配」的场景，否则用户输入 `.`、`*`、`(` 会导致语法错误或误匹配。
+
+```python
+import re
+
+kw = 'a.b*c'
+print(re.escape(kw))                       # a\.b\*c
+re.search(re.escape(kw), 'x a.b*c y')      # 能正确按字面量匹配
+```
+
+**Q19：`findall` 和 `finditer` 怎么选？**
+
+`findall` 返回**列表**（一次性构造全部结果）；`finditer` 返回**迭代器**，逐个产出 `Match` 对象。文本很大、或需要每个匹配的**位置信息**（`start()`/`end()`/`group()`）时用 `finditer`，更省内存也更灵活。
+
+```python
+for m in re.finditer(r'\d+', 'a1b22c333'):
+    print(m.group(), m.start(), m.end())
+```
+
+**Q20：写一个密码强度校验正则（至少 8 位，且同时含字母和数字）。**
+
+```python
+import re
+
+def strong_pwd(pwd):
+    return bool(re.fullmatch(r'(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}', pwd))
+
+print(strong_pwd('abc12345'))   # True
+print(strong_pwd('abcdefgh'))   # False
+print(strong_pwd('12345678'))   # False
+```
+
+思路：用**前瞻断言**做「必须包含某类字符」的检查，`(?=.*[A-Za-z])` 表示「后面某处要有字母」、`(?=.*\d)` 表示要有数字，最后用 `[A-Za-z\d]{8,}` 约束长度与允许的字符集。用 `fullmatch` 保证整串匹配。
+
+**Q21：为什么不该用正则解析 HTML？**
+
+HTML **不是正则语言**：标签可嵌套、属性可换行、注释与 `<script>` 里可能有伪标签，正则无法正确处理嵌套结构。典型翻车是 `<div>.*</div>` 在多个 div 时会贪婪吞掉整段。正确做法是用 **HTML 解析器**（`BeautifulSoup`、`lxml`、`html.parser`）。只有「已知格式非常固定的片段」（如某个固定模板里的单个链接）才适合用正则应个急。
+
+**Q22：`^`/`$` 和 `\A`/`\Z` 有什么区别？**
+
+- `^` / `$`：默认匹配**字符串的开头/结尾**，但加了 `re.M` 后变成匹配**每一行的开头/结尾**；
+- `\A` / `\Z`：**永远只匹配整个字符串的首尾**，不受 `re.M` 影响。
+
+```python
+text = 'ab\ncd'
+re.findall(r'^.', text)         # ['a']       默认
+re.findall(r'^.', text, re.M)   # ['a', 'c']  逐行
+re.findall(r'\A.', text, re.M)  # ['a']       始终只匹配开头
+```
+
+需要「整串就是它」而非「某一行是它」时，用 `\A...\Z`（或直接 `fullmatch`）更安全。
+
 ---
 
-## 七、易错点
+## 八、易错点
 
 1. **忘记用原始字符串**：`'\d+'` 在 Python 里 `\d` 不是合法转义（会报警告），必须写 `r'\d+'`
 2. **`.` 不匹配换行**：跨行匹配一定要加 `re.S`
@@ -683,3 +845,6 @@ re.sub(r'<[^>]+>', '', html)
 12. **`re.sub` 替换串里的反斜杠**：`\1`、`\g<1>`、`\\` 都有特殊含义，动态内容建议传函数
 13. **可选分组没匹配上返回 `None`**：拼接前记得 `or ''`
 14. **误以为 `\d` 只匹配 0-9**：Python 3 默认 Unicode 语义，全角数字也会中，需要时加 `re.A`
+15. **命名分组名字重复**：同一个 pattern 里 `(?P<name>...)` 不能重名，否则 `re.error`
+16. **大文本用 `findall`**：会一次性构造整个列表，改用 `finditer` 惰性消费更省内存
+17. **`^`/`$` 当成整串边界**：加了 `re.M` 后它们变成行边界，整串定位要用 `\A`/`\Z`

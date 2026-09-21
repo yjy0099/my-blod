@@ -3,7 +3,7 @@ title: Python 基础笔记 · 第 4 章：字符串
 date: 2026-09-03
 category: Python 基础
 tags: [Python, 学习笔记, 面试题, 字符串, 编码, f-string]
-summary: 字符串的不可变性、几十个常用方法速查、三种格式化方式对比、join 与 + 的性能差异，以及 encode/decode 乱码的成因与排查。
+summary: 字符串的不可变性、几十个常用方法速查、三种格式化方式对比、join 与 + 的性能差异、base64 编解码，以及 encode/decode 乱码的成因与排查，附 22 道高频面试题。
 ---
 
 ## 一、核心特性：不可变
@@ -661,6 +661,33 @@ print(raw)                          # => b'\xe4\xb8\xad\xe6\x96\x87\n'
 print('\ufeff中'.encode('utf-8-sig') == '中'.encode('utf-8-sig'))   # => False
 ```
 
+### base64 编解码
+
+**base64 把任意二进制数据用 64 个可打印字符（`A-Z a-z 0-9 + /`）表示出来**，目的是让二进制能安全地在「只支持文本」的通道里传输——邮件附件、URL 参数、JSON 字段、HTTP Basic 认证、JWT 的载荷都是 base64。
+
+```python
+import base64
+
+raw = '中文abc'.encode('utf-8')          # 先得到 bytes
+enc = base64.b64encode(raw)              # bytes -> bytes
+print(enc)                               # b'5Lit5paHYWJj'
+
+dec = base64.b64decode(enc)              # bytes -> bytes
+print(dec.decode('utf-8'))               # 中文abc
+```
+
+**要点与坑：**
+
+- 输入输出都是 **bytes**，所以要先 `encode`、拿到后要 `decode`，直接塞 `str` 会 `TypeError`；
+- 编码后体积膨胀约 **4/3（+33%）**，因为 3 字节被编码成 4 个字符，不足 3 字节要补 `=`；
+- URL / 文件名场景要用 **URL 安全变体**（把 `+` `/` 换成 `-` `_`）：
+
+```python
+base64.urlsafe_b64encode(b'\xfb\xff')     # b'-_8='  可直接放进 URL
+```
+
+**最重要的认知：base64 是「编码」不是「加密」。** 它没有任何密钥，任何人都能一键还原。**绝不能用来保护密码或敏感数据**——需要保密请用 AES 等真正的加密算法。
+
 ---
 
 ## 六、高频面试题
@@ -792,6 +819,61 @@ a, b = 'listen', 'silent'
 print(sorted(a) == sorted(b))        # => True   O(n log n)
 print(Counter(a) == Counter(b))      # => True   O(n)
 ```
+
+**Q17：base64 是什么？它和加密有什么区别？**
+
+base64 是一种**编码**方案，用 64 个可打印字符表示二进制数据，让二进制能安全通过「只支持文本」的通道（邮件、URL、JSON、JWT）。**它没有密钥，任何人都能一键还原，所以不是加密**——绝不能用它保护密码或敏感信息，需要保密请用 AES 等真正的加密算法。编解码用 `base64.b64encode/b64decode`，输入输出都是 `bytes`，体积膨胀约 33%，放进 URL 要用 `urlsafe_b64encode`。
+
+**Q18：`%`、`str.format`、f-string 三种格式化方式怎么选？**
+
+| 方式 | 写法 | 特点 |
+| --- | --- | --- |
+| `%` | `'%s-%d' % (a, b)` | 老写法，类型要自己对齐，可读性差 |
+| `format` | `'{} {}'.format(a, b)` | 功能全、可复用模板，但啰嗦 |
+| f-string | `f'{a} {b}'` | **运行时最快、可读性最好**（Python 3.6+） |
+
+优先用 **f-string**；需要动态拼接模板字符串（格式串来自变量/配置）时用 `format`；老代码里见到 `%` 知道含义即可。
+
+**Q19：`index` 和 `find` 有什么区别？`count` 呢？**
+
+- `find(sub)`：找不到返回 **-1**，不抛异常；
+- `index(sub)`：找不到抛 **`ValueError`**；
+- `count(sub)`：统计子串出现次数，不涉及异常。
+
+```python
+s = 'hello'
+s.find('z')     # -1
+# s.index('z')  # ValueError: substring not found
+s.count('l')    # 2
+```
+
+**Q20：`startswith` / `endswith` 能一次判断多个前缀吗？**
+
+可以，传**元组**即可，比写多个 `or` 更简洁：
+
+```python
+name = 'report.pdf'
+name.endswith(('.png', '.jpg', '.pdf'))    # True
+name.startswith(('http://', 'https://'))   # False
+```
+
+**Q21：字符串不可变，这对「字典 key」和「哈希」有什么意义？**
+
+不可变意味着**哈希值在生命周期内恒定**，这正是字符串能作 `dict` 的 key、能放进 `set` 的前提。如果字符串可变，改动内容会导致哈希值与所在桶不匹配，哈希表立刻失效。同理，`tuple`（元素全部可哈希）能当 key，而 `list` 不能——这些类型都必须满足「可哈希」这个契约。
+
+**Q22：`translate` 和 `maketrans` 有什么用？**
+
+做**字符级批量映射/删除**，一次遍历完成多个替换，比链式 `replace` 高效（`replace` 每调用一次就新建一个字符串）。
+
+```python
+table = str.maketrans('aeiou', '12345')     # 建立字符映射表
+print('hello world'.translate(table))       # h2ll4 w4rld
+
+# 第二、三个参数为空表示「只删除」，删掉所有数字
+print('1a2b3c'.translate(str.maketrans('', '', '123')))   # abc
+```
+
+常见用途：批量脱敏、统一全半角、清除标点。
 
 ---
 

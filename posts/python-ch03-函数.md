@@ -3,7 +3,7 @@ title: Python 基础笔记 · 第 3 章：函数
 date: 2026-09-03
 category: Python 基础
 tags: [Python, 学习笔记, 面试题, 函数, 装饰器, 生成器]
-summary: 参数传递机制、五种类别形参与解包、LEGB 作用域、闭包与延迟绑定陷阱、装饰器原理与手写模板、lambda 与高阶函数、生成器迭代器与函数注解，附 14 道高频面试题。
+summary: 参数传递机制、五种类别形参与解包、LEGB 作用域、闭包与延迟绑定陷阱、函数五种角色（任务型/生产型/消费型/功能型/断言型）、装饰器原理与手写模板、lambda 与高阶函数、生成器迭代器与函数注解，附 21 道高频面试题。
 ---
 
 ## 一、参数：五种类别与书写顺序
@@ -349,7 +349,73 @@ print(fact(5), fib(10))          # => 120 55
 
 ---
 
-## 八、高频面试题
+## 八、函数的五种角色
+
+按「有没有入参、有没有返回值、有没有副作用」三个维度，函数可以分成五种角色。分清角色的价值在于：**一个函数只干一类事，命名和签名自然就清晰了**。
+
+| 角色 | 入参 | 返回值 | 副作用 | 典型例子 |
+| --- | --- | --- | --- | --- |
+| 任务型 | 无 | 无（`None`） | 有 | `print_hello()`、发送邮件 |
+| 生产型 | 无 | 有 | 无 | `input()`、`random()`、读配置 |
+| 消费型 | 有 | 无 | 有 | `log(msg)`、遍历打印 |
+| 功能型 | 有 | 有 | 无 | `len()`、`sum()`、`sorted()` |
+| 断言型 | 有 | `bool` | 无 | `isdigit()`、`startswith()` |
+
+**任务型**：只负责「做一件事」，不产出数据。
+
+```python
+def send_email(to):
+    """任务型：执行动作，不返回数据。"""
+    print(f'发送邮件给 {to}')
+```
+
+**生产型**：只负责「产出数据」，不接收输入。
+
+```python
+import random
+
+def make_code(length=6):
+    """生产型：每次调用产出一个新值。"""
+    return ''.join(random.choices('0123456789', k=length))
+```
+
+**消费型**：接收数据并「用掉」，通常无返回值。
+
+```python
+def foreach(items, action):
+    """消费型：遍历消费数据。"""
+    for item in items:
+        action(item)
+
+foreach([1, 2, 3], print)
+```
+
+**功能型**：输入 → 计算 → 返回新值，**无副作用**（同样的输入永远同样的输出，即「纯函数」倾向）。
+
+```python
+def computed(a, b, op):
+    """功能型：输入决定输出。"""
+    if op == 'add':
+        return a + b
+    if op == 'pow':
+        return a ** b
+```
+
+**断言型**：返回布尔值，供 `if` / `filter` 等做判断。
+
+```python
+def is_even(n):
+    """断言型：返回 bool。"""
+    return n % 2 == 0
+
+print(list(filter(is_even, range(10))))   # [0, 2, 4, 6, 8]
+```
+
+> **实践建议**：优先写**功能型**（无副作用、易测试、可缓存）；把副作用（打印、写文件、发请求）集中到少数**任务型/消费型**函数里，别让一个函数既算数据又改全局状态。
+
+---
+
+## 九、高频面试题
 
 **Q1：Python 的参数传递是值传递还是引用传递？**
 
@@ -427,9 +493,84 @@ def fib(n):
 
 `@a @b @c def f` 等价于 `f = a(b(c(f)))`，离函数最近的 `c` 最先包装，`a` 在最外层最后包。
 
+**Q15：`map`、`filter`、`reduce` 的区别？**
+
+- `map(f, iterable)`：对每个元素施加 `f`，返回迭代器（懒求值）；
+- `filter(f, iterable)`：保留 `f` 返回真值的元素，返回迭代器；
+- `reduce(f, iterable, init)`：把元素两两累积成一个值，需 `from functools import reduce`。
+
+```python
+from functools import reduce
+
+list(map(lambda x: x * 2, [1, 2, 3]))        # [2, 4, 6]
+list(filter(lambda x: x % 2, [1, 2, 3]))     # [1, 3]
+reduce(lambda a, b: a + b, [1, 2, 3], 0)     # 6
+```
+
+Python 3 里 `map`/`filter` 返回**迭代器**而非列表，且大多数场景下**推导式更可读**（`[x * 2 for x in nums]` 优于 `map`）。
+
+**Q16：`lambda` 和 `def` 有什么区别？为什么 lambda 里不能写赋值语句？**
+
+`lambda` 是**表达式**，只能包含一个表达式（隐式 `return`），不能有语句块、不能写 `=` 赋值、不能写多行逻辑；`def` 是**语句**，可以写任意复杂逻辑并带文档字符串。lambda 的定位是「临时的、一次性的小函数」，主要作为 `key=`、`sorted`、`map` 的参数。**不要为了炫技把复杂逻辑塞进 lambda**。
+
+**Q17：什么是纯函数？为什么推荐优先写纯函数？**
+
+纯函数指：**相同输入永远返回相同输出**，且**不产生副作用**（不改外部变量、不写文件、不发请求）。优点：易测试（不用造环境）、可安全并行、可加缓存（如 `@lru_cache`）、易于推理。把副作用集中到少数函数里，是让代码可维护的关键手段。
+
+**Q18：函数式编程里 `@lru_cache` 有什么用？有什么限制？**
+
+`functools.lru_cache` 按参数缓存函数返回值，把重复计算（如递归 `fib`）从指数级降到线性。
+
+```python
+from functools import lru_cache
+
+@lru_cache(maxsize=None)
+def fib(n):
+    return n if n < 2 else fib(n - 1) + fib(n - 2)
+```
+
+限制：**被缓存的参数必须可哈希**（不能是 list/dict）；缓存会占内存，`maxsize=None` 是无界缓存；有副作用的函数不要缓存。
+
+**Q19：`global` 和 `nonlocal` 的区别？**
+
+- `global x`：声明 `x` 是**模块级全局变量**，函数内可读写全局的那个；
+- `nonlocal x`：声明 `x` 属于**外层嵌套函数**的作用域（闭包变量），用于在闭包里修改外层变量；
+- 两者都只在**需要「修改」**时才声明，只读不需要；`nonlocal` **不能**指向全局变量。
+
+**Q20：函数默认参数在什么时候求值？为什么这很重要？**
+
+默认参数在**函数定义时求值一次**（不是每次调用），并绑定到函数对象上。所以可变默认值会在多次调用间**共享并累积**：
+
+```python
+def f(x, cache={}):     # 错误：cache 只创建一次
+    cache[x] = x * 2
+    return cache
+
+f(1); f(2)
+# 第二次调用时 cache 里还留着第一次的数据
+```
+
+正确写法是默认 `None`，函数体内再创建：`def f(x, cache=None): cache = {} if cache is None else cache`。
+
+**Q21：什么是偏函数（`functools.partial`）？**
+
+把某个函数的部分参数**预先固定**，生成一个新的可调用对象。
+
+```python
+from functools import partial
+
+def power(base, exp):
+    return base ** exp
+
+square = partial(power, exp=2)
+print(square(5))     # 25
+```
+
+常用于回调、统一的日志调用、把多参数函数适配成单参数函数。它不改原函数，只是包一层默认值。
+
 ---
 
-## 九、易错点
+## 十、易错点
 
 1. **默认参数用可变对象**：历史调用会互相污染
 2. **闭包引用循环变量**：延迟绑定，务必用默认参数固化
@@ -440,3 +581,8 @@ def fib(n):
 7. **`map` / `filter` 返回迭代器**（Python 3），打印出来是 `<map object>`，需要 `list()` 转换
 8. **可变默认参数 + 共享传参叠加**：`def f(x, cache={})` 在多次调用间泄漏状态
 9. **递归深度**：深层递归会 `RecursionError`，注意改用迭代或加缓存
+10. **`reduce` 要额外导入**：Python 3 把 `reduce` 移到了 `functools`，直接写 `reduce(...)` 会 `NameError`
+11. **`lru_cache` 缓存了不可哈希参数**：传入 list/dict 会报 `TypeError: unhashable type`
+12. **把复杂逻辑塞进 lambda**：lambda 只能写一个表达式，写不下就老实改成 `def`
+13. **`nonlocal` 当成 `global` 用**：`nonlocal` 只能指向外层嵌套函数的变量，指向全局会 `SyntaxError`
+14. **纯函数里偷做副作用**：在「功能型」函数里改全局变量或写文件，会让它无法被安全缓存和并行

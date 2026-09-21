@@ -3,7 +3,7 @@ title: Python 基础笔记 · 第 6 章：面向对象
 date: 2026-09-03
 category: Python 基础
 tags: [Python, 学习笔记, 面试题, 面向对象, 魔术方法, 设计原则]
-summary: 类属性与实例属性的陷阱、三种方法类型、私有化与 property、MRO 与 super 的协作机制、常用魔术方法，以及单例模式的两种写法。
+summary: 类属性与实例属性的陷阱、三种方法类型、私有化与 property、MRO 与 super 的协作机制、常用魔术方法、单例模式与元类、dataclass 样板消除，以及封装继承多态、抽象基类、反射等高频考点，附 24 道面试题。
 ---
 
 ## 一、类与实例
@@ -1222,6 +1222,86 @@ MRO（方法解析顺序）用 C3 线性化算法生成，可通过 `类名.__mr
 
 实现 `__enter__`（返回给 `as` 的对象）和 `__exit__(exc_type, exc_val, tb)`。`__exit__` 返回 `True` 会吞掉异常，一般返回 `False`/`None`。简单场景用 `contextlib.contextmanager` 装饰生成器函数更省事。
 
+**Q19：面向对象的三大特性在 Python 里分别怎么体现？**
+
+- **封装**：用 `_name`（约定私有）和 `__name`（触发名称改写 `_类名__name`）隐藏内部实现，通过 `property` 提供受控的读写入口；
+- **继承**：`class Child(Parent)` 复用并扩展父类，`super()` 沿 MRO 调用父类实现；
+- **多态**：**鸭子类型**——不检查类型，只看对象有没有对应方法，所以 `len()`、`for`、`with` 能作用于任何实现了相应协议的对象。
+
+**Q20：`isinstance()` 和 `type()` 有什么区别？为什么推荐用 `isinstance`？**
+
+`type(obj)` 返回**精确类型**，不做继承判断；`isinstance(obj, T)` 会**沿继承链判断**，子类实例也返回 `True`，而且第二个参数可以是**元组**（多类型判断）。因此类型判断优先 `isinstance`。
+
+```python
+class Animal: pass
+class Dog(Animal): pass
+
+d = Dog()
+type(d) is Animal            # False  只看精确类型
+isinstance(d, Animal)        # True   认继承关系
+isinstance(d, (int, Animal)) # True   支持元组
+```
+
+> 注意 `bool` 是 `int` 的子类，所以 `isinstance(True, int)` 为 `True`；要区分请用 `type(x) is bool`。
+
+**Q21：抽象基类（`abc`）有什么用？**
+
+给「鸭子类型」加上**强制约束**：用 `ABC` + `@abstractmethod` 声明必须实现的接口，子类没实现就无法实例化。适用于框架/基类需要规定子类契约的场景。
+
+```python
+from abc import ABC, abstractmethod
+
+class Shape(ABC):
+    @abstractmethod
+    def area(self): ...
+
+class Circle(Shape):
+    def __init__(self, r): self.r = r
+    def area(self): return 3.14 * self.r ** 2
+
+# Shape()      # TypeError: 不能实例化抽象类
+# class Bad(Shape): pass
+# Bad()        # TypeError: 没实现 area
+```
+
+**Q22：反射是什么？`getattr` / `setattr` / `hasattr` 有什么用？**
+
+反射指**用字符串动态操作属性和方法**，让程序在运行期决定调用什么。常用于插件加载、配置驱动、ORM 字段映射、序列化框架。
+
+```python
+class User:
+    def __init__(self, name): self.name = name
+    def greet(self): return f'hi {self.name}'
+
+u = User('YJY')
+print(hasattr(u, 'name'))                 # True
+print(getattr(u, 'name'))                 # YJY
+print(getattr(u, 'age', 0))               # 0     不存在时给默认值，避免 AttributeError
+method = getattr(u, 'greet')              # 取到方法再调用
+print(method())
+setattr(u, 'age', 18)                     # 动态设置属性
+```
+
+**Q23：`__call__` 有什么用？**
+
+让**实例像函数一样被调用**（可调用对象）。适合「带状态的函数」——比闭包更清晰，比普通函数能携带更多配置。
+
+```python
+class Counter:
+    def __init__(self): self.n = 0
+    def __call__(self, step=1):
+        self.n += step
+        return self.n
+
+c = Counter()
+print(c(), c(3), c())     # 1 4 5
+print(callable(c))        # True
+```
+
+**Q24：为什么设计上常说「组合优于继承」？**
+
+继承是**编译期/定义期**绑定的强耦合：父类一改，所有子类都受影响；多层继承还会带来 MRO 复杂度和「脆弱基类」问题。组合在**运行期**装配，耦合更松、更易替换与单测。经验法则：**「是一个（is-a）」用继承，「有一个（has-a）」用组合**；能用组合表达就别用继承。
+
 ---
 
 ## 九、易错点
@@ -1242,3 +1322,7 @@ MRO（方法解析顺序）用 C3 线性化算法生成，可通过 `类名.__mr
 14. **给可变对象实现 `__hash__`**：放进 set 后改字段就再也查不到了
 15. **滥用继承表达"有一个"关系**：`Car(Engine)` 是错的，应该 `self.engine = Engine()`
 16. **`abstractmethod` 不写在 `ABC` 子类里**：普通类的 `@abstractmethod` 不生效，照样能实例化
+17. **`isinstance(True, int)` 是 `True`**：`bool` 是 `int` 的子类，要精确判断布尔请用 `type(x) is bool`
+18. **`getattr` 不给默认值**：属性不存在直接 `AttributeError`，不确定时写 `getattr(obj, 'k', None)`
+19. **反射拼接的属性名写错**：字符串没有 IDE 补全，拼错只有运行期才暴露，关键路径要加校验
+20. **用继承表达「有一个」**：`Car(Engine)` 是建模错误，应该组合 `self.engine = Engine()`

@@ -3,7 +3,7 @@ title: Python 基础笔记 · 第 1 章：语法基础
 date: 2026-09-03
 category: Python 基础
 tags: [Python, 学习笔记, 面试题, 语法基础, 变量, 运算符]
-summary: 学完 Python 基础后的第一份整理：动态类型与内存管理、变量即引用、运算符全家福与优先级、is 与 == 的区别、小整数池与字符串驻留、缩进即语法，以及 12 道高频面试题。
+summary: 学完 Python 基础后的第一份整理：动态类型与内存管理、变量即引用、运算符全家福与优先级、is 与 == 的区别、小整数池与字符串驻留、缩进即语法、if/while/for 流程控制与 break/continue/循环 else、源码编码声明，以及 20 道高频面试题。
 ---
 
 ## 一、必须记住的知识点
@@ -265,6 +265,99 @@ if __name__ == '__main__':
 # 其他文件 import my_module 时，上面的 print 不会被执行
 ```
 
+### 14. 流程控制：if / while / for
+
+**（1）条件分支**
+
+```python
+score = 85
+if score >= 90:
+    level = 'A'
+elif score >= 80:
+    level = 'B'
+else:
+    level = 'C'
+```
+
+**三元表达式**（只有「二选一」时用，写复杂了反而难读）：
+
+```python
+level = '及格' if score >= 60 else '不及格'
+```
+
+**（2）while 循环**
+
+```python
+i = 0
+while i < 3:
+    print(i)
+    i += 1
+```
+
+**（3）for 循环**：本质是「遍历可迭代对象」，不是 C 风格的计数循环。
+
+```python
+for ch in 'abc':        # 遍历字符串
+    print(ch)
+
+for i in range(3):      # range 生成惰性序列 0,1,2（左闭右开）
+    print(i)
+
+for idx, val in enumerate(['a', 'b']):   # 同时拿下标和值
+    print(idx, val)
+```
+
+> `range(start, stop, step)` **左闭右开**，`range(1, 10, 2)` 得到 1,3,5,7,9；`stop` 取不到，这是最常见的差一错误来源。
+
+**（4）break / continue / else**
+
+- `break`：立即跳出**当前这一层**循环；
+- `continue`：跳过本次剩余语句，直接进入下一次迭代；
+- 循环的 **`else` 子句**：只有在循环**正常结束**（未被 `break` 打断）时才执行。
+
+```python
+for n in range(2, 10):
+    for x in range(2, n):
+        if n % x == 0:
+            break          # 找到因子，不是质数
+    else:
+        print(n, '是质数')  # 内层没有被 break，才执行
+```
+
+> 循环 `else` 极易被误读成「否则」——它不是 `if-else` 的 else，而是「循环没被打断」的奖励分支。觉得绕就用一个标志变量替代，可读性更好。
+
+**（5）不要在遍历时增删元素**
+
+```python
+nums = [1, 2, 3, 4]
+for n in nums:
+    if n % 2 == 0:
+        nums.remove(n)     # 危险：边遍历边改，元素会被跳过
+# 正确做法：遍历副本 / 用推导式生成新列表
+nums = [n for n in nums if n % 2 != 0]
+```
+
+### 15. 源码编码与编码声明
+
+- Python 3 **默认源码就是 UTF-8**，可以直接写中文，不需要声明；
+- Python 2 默认 ASCII，源码含中文必须声明编码（老项目里会见到）：
+
+```python
+# -*- coding: utf-8 -*-
+```
+
+- 常见编码：`ASCII`（单字节，只覆盖英文）、`GBK`（中文双字节）、`UTF-8`（变长，一个汉字 3 字节，国际化首选）；
+- 源码文件、读写文件、网络传输三者的编码要**保持一致**，否则就是乱码的根源。
+
+```python
+s = '中文'
+raw = s.encode('utf-8')     # str -> bytes
+back = raw.decode('utf-8')  # bytes -> str
+print(len(s), len(raw))     # 2 6（UTF-8 下汉字占 3 字节）
+```
+
+> 更深入的 `encode/decode`、`errors` 容错策略、`bytes` 与 `str` 的边界，见第 4 章字符串。
+
 ---
 
 ## 二、常用内置函数速查
@@ -360,6 +453,70 @@ a, b = b, a     # 元组打包解包，无需临时变量
 
 `input()` 永远返回 `str`；需要数字要 `int(input())` / `float(input())` 手动转换，否则 `1 + input()` 会 `TypeError`。
 
+**Q13：`pass` 语句有什么用？**
+
+`pass` 是**空操作语句**，执行它什么都不发生，纯粹为了「语法上需要一条语句」时占位。典型场景：先搭好函数/类的骨架、故意留一个空分支、或捕获异常后什么都不做。
+
+```python
+def todo():
+    pass          # 占位，避免 IndentationError
+
+try:
+    risky()
+except Exception:
+    pass          # 有意忽略（生产环境应记日志，别静默吞掉）
+```
+
+**Q14：`break`、`continue`、`return` 的区别？**
+
+- `break`：终止**当前这一层**循环，跳到循环之后继续执行；
+- `continue`：结束本次迭代，进入下一次循环；
+- `return`：直接结束**整个函数**并返回，连外层循环也一并退出。
+
+嵌套循环里 `break` 只跳出最内层，需要跳出多层得用标志位、函数 `return` 或异常。
+
+**Q15：循环的 `else` 子句什么时候执行？**
+
+`for...else` / `while...else` 的 `else` 只在循环**正常走完、没有被 `break` 打断**时执行。语义是「没找到 / 没被打断时的分支」，和 `if-else` 的「否则」没有任何关系。
+
+```python
+for n in range(2, 10):
+    for x in range(2, n):
+        if n % x == 0:
+            break
+    else:
+        print(n, '是质数')   # 内层循环没被 break，才执行
+```
+
+**Q16：`.py` 和 `.pyc` 有什么区别？`__pycache__` 是什么？**
+
+`.py` 是源码，`.pyc` 是**编译后的字节码**。Python 执行时先把源码编译成字节码，再交给虚拟机执行；为省去重复编译，会把字节码缓存到 `__pycache__/` 目录（文件名形如 `module.cpython-312.pyc`）。`.pyc` 里存的是字节码不是机器码，**跨平台、可反编译**，所以删掉它没影响（下次自动重建），也不能替代源码分发。
+
+**Q17：`range()` 返回列表吗？和 Python 2 的 `range` / `xrange` 有什么区别？**
+
+Python 3 的 `range()` 返回**惰性序列对象**（不是列表），只占用固定内存，支持索引与 `len()`。Python 2 的 `range()` 直接返回列表，`xrange()` 才是惰性版本。所以 Python 3 里 `range(10**9)` 也不会爆内存，需要列表时才 `list(range(...))`。
+
+**Q18：遍历列表时修改列表会发生什么？怎么正确处理？**
+
+会**漏掉元素**：`for` 依赖内部索引递增，删除元素后后面的元素前移，导致下一个元素被跳过。正确做法是**遍历副本**或直接生成新列表：
+
+```python
+nums = [1, 2, 3, 4]
+for n in nums[:]:              # 遍历副本
+    if n % 2 == 0:
+        nums.remove(n)
+
+nums = [n for n in nums if n % 2 != 0]   # 更推荐：推导式造新列表
+```
+
+**Q19：`assert` 和普通条件判断有什么区别？什么时候不该用 `assert`？**
+
+`assert` 是**调试断言**，条件为假时抛 `AssertionError`；且**在 `-O` 优化模式下会被整体移除**。因此它只适合「绝不可能发生」的内部自检。**不要用 assert 做参数校验或业务校验**（线上可能被优化掉而不生效），这类校验应写显式 `if ...: raise ValueError(...)`。
+
+**Q20：为什么 Python 用缩进表示代码块？混用 Tab 和空格会怎样？**
+
+Python 用**缩进**划分代码块，强制统一风格、省掉花括号。缩进相同的行属于同一块，块结束靠「缩进变浅」体现。Tab 与空格混用时，虽然 Python 3 会报 `TabError`（不一致的缩进方式），但不同编辑器把 Tab 显示成不同宽度，极易造成「看着对齐、实际不对齐」的隐患，**统一用 4 个空格**是 PEP 8 的要求。
+
 ---
 
 ## 四、易错点
@@ -372,3 +529,9 @@ a, b = b, a     # 元组打包解包，无需临时变量
 6. **默认参数不要用可变对象**：`def f(x, lst=[])` 会累积历史调用的结果，应写 `lst=None`
 7. **Tab 与空格混用**：会 `IndentationError`，统一 4 空格
 8. **`input()` 当数字用**：记得转型，否则类型是 `str`
+9. **`range` 左闭右开**：`range(1, 5)` 是 1~4，不含 5，差一错误的高发区
+10. **误读循环 `else`**：它不是「否则」，而是「循环未被 `break` 打断时才执行」
+11. **`break` 只跳出一层**：嵌套循环要跳出多层得用标志位或函数 `return`
+12. **边遍历边删元素**：会漏掉元素，应遍历副本或改用推导式
+13. **用 `assert` 做参数校验**：`-O` 模式下 assert 会被移除，业务校验必须显式 `raise`
+14. **循环变量会泄漏**：`for` 结束后循环变量仍留在作用域里（函数内同理），别指望它被自动清理

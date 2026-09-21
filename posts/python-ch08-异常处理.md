@@ -3,7 +3,7 @@ title: Python 基础笔记 · 第 8 章：异常处理
 date: 2026-09-03
 category: Python 基础
 tags: [Python, 学习笔记, 面试题, 异常处理, 上下文管理器]
-summary: 异常层级结构、try/except/else/finally 的执行顺序与 finally 里的 return 陷阱、异常链 raise from、自定义异常，以及 with 上下文管理器的实现原理与最佳实践。
+summary: 异常层级结构、try/except/else/finally 的执行顺序与 finally 里的 return 陷阱、异常链 raise from、自定义异常、with 上下文管理器的实现原理，以及 logging 的 Logger/Handler/Formatter 三层模型与 dictConfig 配置实践，附 20 道高频面试题。
 ---
 
 ## 一、核心知识点
@@ -260,6 +260,115 @@ Python 社区更推崇 **EAFP**：代码更短、避免竞态（判断和使用�
 - **捕获具体异常**：优先捕获 `ValueError` 这类具体异常，兜底才用 `Exception`
 - **能处理就处理，处理不了就记录后抛出**：保留现场比吞掉更有价值
 
+### 15. 用配置文件管理 logging
+
+程序稍大就不能靠 `print` 或 `basicConfig` 了，需要**集中配置**日志。`logging` 的模型是三层：
+
+| 组件 | 职责 | 常用实现 |
+| --- | --- | --- |
+| **Logger** | 产生日志、按名字形成层级 | `logging.getLogger('app.db')` |
+| **Handler** | 决定日志**去哪儿** | `StreamHandler`、`FileHandler`、`RotatingFileHandler` |
+| **Formatter** | 决定日志**长什么样** | `'%(asctime)s [%(levelname)s] %(name)s: %(message)s'` |
+
+日志级别从低到高：`DEBUG < INFO < WARNING < ERROR < CRITICAL`，**默认只输出 WARNING 及以上**。
+
+**方式一：`dictConfig`（推荐，纯 Python，无需额外文件）**
+
+```python
+import logging.config
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'standard': {
+            'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'level': 'INFO',
+            'formatter': 'standard',
+        },
+        'file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': 'app.log',
+            'maxBytes': 10 * 1024 * 1024,   # 10MB 切一个
+            'backupCount': 5,               # 最多留 5 个历史文件
+            'encoding': 'utf-8',
+            'level': 'DEBUG',
+            'formatter': 'standard',
+        },
+    },
+    'root': {
+        'level': 'DEBUG',
+        'handlers': ['console', 'file'],
+    },
+}
+
+logging.config.dictConfig(LOGGING)
+log = logging.getLogger(__name__)
+log.info('服务启动完成')
+```
+
+**方式二：`fileConfig`（INI 配置文件，改配置不用改代码）**
+
+```ini
+# logging.conf
+[loggers]
+keys=root,sampleLogger
+
+[handlers]
+keys=consoleHandler,fileHandler
+
+[formatters]
+keys=formatter
+
+[logger_root]
+level=ERROR
+handlers=consoleHandler
+
+[logger_sampleLogger]
+level=INFO
+handlers=consoleHandler,fileHandler
+qualname=sampleLogger
+propagate=0
+
+[handler_consoleHandler]
+class=StreamHandler
+level=DEBUG
+formatter=formatter
+args=(sys.stdout,)
+
+[handler_fileHandler]
+class=FileHandler
+level=INFO
+formatter=formatter
+args=('app.log', 'a', 'utf-8')
+
+[formatter_formatter]
+format=%(asctime)s [%(levelname)s] %(name)s: %(message)s
+datefmt=%Y-%m-%d %H:%M:%S
+```
+
+```python
+import logging
+import logging.config
+
+logging.config.fileConfig('logging.conf')      # 读取配置文件（默认 disable_existing_loggers=True）
+log = logging.getLogger('sampleLogger')
+log.info('这条会按配置文件写到控制台和文件')
+```
+
+**配置要点：**
+
+- **`propagate=0`**：该 logger 处理完不再向父 logger 传递，否则会被 root 的 handler **重复输出一遍**；
+- **`RotatingFileHandler`**：按大小滚动，避免单个日志文件无限膨胀；按时间滚动用 `TimedRotatingFileHandler`；
+- **`fileConfig` 默认会禁用已有 logger**，若与第三方库日志冲突，改用 `dictConfig` 并设 `disable_existing_loggers: False`；
+- **日志里不要拼 f-string**：用 `log.info('user=%s', uid)` 传参，级别不够时不会做字符串格式化，性能更好，也避免日志注入。
+
 ---
 
 ## 二、常用方法速查表
@@ -348,6 +457,70 @@ except Exception:
 
 `__cause__` 由 `raise X from Y` 显式设置（根因）；`__context__` 是隐式的"在处理上一个异常时又抛出新异常"的上下文。`from None` 可清除两者。
 
+**Q15：logging 有哪些日志级别？默认输出到哪一级？**
+
+从低到高：`DEBUG < INFO < WARNING < ERROR < CRITICAL`。**root logger 默认级别是 WARNING**，所以不配置的话 `debug`/`info` 都不输出。
+
+```python
+import logging
+logging.basicConfig(level=logging.INFO)   # 不设的话 info 看不到
+logging.info('这行会输出')
+logging.debug('这行默认被过滤')
+```
+
+**Q16：logging 里 Logger、Handler、Formatter 各自负责什么？**
+
+- **Logger**：程序调用的入口，按名字（`app.db`）形成**树状层级**，决定「这条日志要不要处理」（级别过滤）；
+- **Handler**：决定日志**输出到哪**（控制台、文件、网络、邮件），可挂多个；
+- **Formatter**：决定日志的**文本格式**（时间、级别、logger 名、消息）。
+
+三者关系：`Logger → 若干 Handler → 每个 Handler 配一个 Formatter`。日志会沿 logger 层级向父级**传播（propagate）**，所以同一个 logger 挂 handler 又没关 propagate，就会和 root 的 handler 一起重复输出。
+
+**Q17：为什么日志会重复打印？怎么解决？**
+
+常见两个原因：
+
+1. **propagate 未关闭**：子 logger 处理完又传给 root，root 的 handler 再打一遍 → 设 `logger.propagate = False`（或配置文件里 `propagate=0`）；
+2. **`addHandler` 被调用多次**：例如模块被重复导入或在函数里反复 `addHandler` → 先判断 `if not logger.handlers:` 再添加。
+
+```python
+log = logging.getLogger('app')
+log.propagate = False
+if not log.handlers:
+    log.addHandler(handler)
+```
+
+**Q18：日志文件越来越大怎么办？**
+
+用滚动处理器，别用普通 `FileHandler`：
+
+```python
+from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
+
+# 按大小滚动：单个 10MB，最多保留 5 个历史文件
+RotatingFileHandler('app.log', maxBytes=10 * 1024 * 1024, backupCount=5, encoding='utf-8')
+
+# 按时间滚动：每天切一个，保留 7 天
+TimedRotatingFileHandler('app.log', when='midnight', backupCount=7, encoding='utf-8')
+```
+
+生产环境通常还会把日志交给 ELK / Loki 等集中式平台，本地只留最近若干天。
+
+**Q19：为什么 `log.info(f'user={uid}')` 不推荐？应该怎么写？**
+
+因为它**无论级别是否开启都会先做字符串格式化**，白白浪费性能；当日志被过滤掉时这笔开销纯属浪费。正确写法是把参数**延迟拼接**：
+
+```python
+log.info('user=%s action=%s', uid, action)     # 推荐：级别不够时不做格式化
+# log.info(f'user={uid} action={action}')     # 不推荐
+```
+
+额外好处：参数中的特殊字符不会被当成格式串解析，避免**日志注入**。
+
+**Q20：`dictConfig` 和 `fileConfig` 怎么选？**
+
+`dictConfig`（Python 3.2+）**是现在推荐的方式**：纯 Python 字典，能用代码动态生成、支持 `RotatingFileHandler` 等全部特性、可设 `disable_existing_loggers: False` 避免禁用第三方库日志。`fileConfig` 用 INI 文件，好处是改配置不用改代码，但**默认会禁用已有 logger**，边角场景容易踩坑。新项目一律用 `dictConfig`。
+
 ---
 
 ## 四、易错点
@@ -362,3 +535,7 @@ except Exception:
 8. **裸 `except:`**：连 `KeyboardInterrupt` 都抓，程序无法 Ctrl+C 退出
 9. **在 `with` 块外依赖资源已释放**：误以为 `finally` 会处理，实则对象没实现上下文协议
 10. **`breakpoint()` 留在生产代码**：应移除或改用 logging
+11. **日志重复输出**：`propagate` 没关或 `addHandler` 调了多次，同一行日志会打两遍
+12. **用 f-string 写日志**：级别不够时也白做格式化，应写 `log.info('x=%s', x)`
+13. **只用 `FileHandler`**：日志文件会无限膨胀，务必换成 `RotatingFileHandler`/`TimedRotatingFileHandler`
+14. **`fileConfig` 悄悄禁用第三方日志**：默认 `disable_existing_loggers=True`，会让依赖库的日志消失，新项目改用 `dictConfig`

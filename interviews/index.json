@@ -1,6 +1,6 @@
 {
-  "generated": "2026-09-21 16:54:48",
-  "count": 270,
+  "generated": "2026-09-21 17:16:53",
+  "count": 329,
   "categories": [
     "MySQL",
     "Python"
@@ -1483,6 +1483,61 @@
       "source": "python-ch03-函数.md"
     },
     {
+      "id": "python-ch03-函数#q15",
+      "category": "Python",
+      "topic": "函数",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "`map`、`filter`、`reduce` 的区别？",
+      "answer": "- `map(f, iterable)`：对每个元素施加 `f`，返回迭代器（懒求值）；\n- `filter(f, iterable)`：保留 `f` 返回真值的元素，返回迭代器；\n- `reduce(f, iterable, init)`：把元素两两累积成一个值，需 `from functools import reduce`。\n\n```python\nfrom functools import reduce\n\nlist(map(lambda x: x * 2, [1, 2, 3]))        # [2, 4, 6]\nlist(filter(lambda x: x % 2, [1, 2, 3]))     # [1, 3]\nreduce(lambda a, b: a + b, [1, 2, 3], 0)     # 6\n```\n\nPython 3 里 `map`/`filter` 返回**迭代器**而非列表，且大多数场景下**推导式更可读**（`[x * 2 for x in nums]` 优于 `map`）。",
+      "source": "python-ch03-函数.md"
+    },
+    {
+      "id": "python-ch03-函数#q16",
+      "category": "Python",
+      "topic": "函数",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "`lambda` 和 `def` 有什么区别？为什么 lambda 里不能写赋值语句？",
+      "answer": "`lambda` 是**表达式**，只能包含一个表达式（隐式 `return`），不能有语句块、不能写 `=` 赋值、不能写多行逻辑；`def` 是**语句**，可以写任意复杂逻辑并带文档字符串。lambda 的定位是「临时的、一次性的小函数」，主要作为 `key=`、`sorted`、`map` 的参数。**不要为了炫技把复杂逻辑塞进 lambda**。",
+      "source": "python-ch03-函数.md"
+    },
+    {
+      "id": "python-ch03-函数#q17",
+      "category": "Python",
+      "topic": "函数",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "什么是纯函数？为什么推荐优先写纯函数？",
+      "answer": "纯函数指：**相同输入永远返回相同输出**，且**不产生副作用**（不改外部变量、不写文件、不发请求）。优点：易测试（不用造环境）、可安全并行、可加缓存（如 `@lru_cache`）、易于推理。把副作用集中到少数函数里，是让代码可维护的关键手段。",
+      "source": "python-ch03-函数.md"
+    },
+    {
+      "id": "python-ch03-函数#q18",
+      "category": "Python",
+      "topic": "函数",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "函数式编程里 `@lru_cache` 有什么用？有什么限制？",
+      "answer": "`functools.lru_cache` 按参数缓存函数返回值，把重复计算（如递归 `fib`）从指数级降到线性。\n\n```python\nfrom functools import lru_cache\n\n@lru_cache(maxsize=None)\ndef fib(n):\n    return n if n < 2 else fib(n - 1) + fib(n - 2)\n```\n\n限制：**被缓存的参数必须可哈希**（不能是 list/dict）；缓存会占内存，`maxsize=None` 是无界缓存；有副作用的函数不要缓存。",
+      "source": "python-ch03-函数.md"
+    },
+    {
+      "id": "python-ch03-函数#q19",
+      "category": "Python",
+      "topic": "函数",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "`global` 和 `nonlocal` 的区别？",
+      "answer": "- `global x`：声明 `x` 是**模块级全局变量**，函数内可读写全局的那个；\n- `nonlocal x`：声明 `x` 属于**外层嵌套函数**的作用域（闭包变量），用于在闭包里修改外层变量；\n- 两者都只在**需要「修改」**时才声明，只读不需要；`nonlocal` **不能**指向全局变量。",
+      "source": "python-ch03-函数.md"
+    },
+    {
       "id": "python-ch03-函数#q2",
       "category": "Python",
       "topic": "函数",
@@ -1491,6 +1546,28 @@
       "tags": [],
       "question": "`*args` 和 `**kwargs` 的作用？",
       "answer": "允许函数接收不定数量的参数：`*args` 收集多余位置参数成**元组**，`**kwargs` 收集多余关键字参数成**字典**。常见于装饰器和\"透传参数\"的场景。",
+      "source": "python-ch03-函数.md"
+    },
+    {
+      "id": "python-ch03-函数#q20",
+      "category": "Python",
+      "topic": "函数",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "函数默认参数在什么时候求值？为什么这很重要？",
+      "answer": "默认参数在**函数定义时求值一次**（不是每次调用），并绑定到函数对象上。所以可变默认值会在多次调用间**共享并累积**：\n\n```python\ndef f(x, cache={}):     # 错误：cache 只创建一次\n    cache[x] = x * 2\n    return cache\n\nf(1); f(2)\n# 第二次调用时 cache 里还留着第一次的数据\n```\n\n正确写法是默认 `None`，函数体内再创建：`def f(x, cache=None): cache = {} if cache is None else cache`。",
+      "source": "python-ch03-函数.md"
+    },
+    {
+      "id": "python-ch03-函数#q21",
+      "category": "Python",
+      "topic": "函数",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "什么是偏函数（`functools.partial`）？",
+      "answer": "把某个函数的部分参数**预先固定**，生成一个新的可调用对象。\n\n```python\nfrom functools import partial\n\ndef power(base, exp):\n    return base ** exp\n\nsquare = partial(power, exp=2)\nprint(square(5))     # 25\n```\n\n常用于回调、统一的日志调用、把多参数函数适配成单参数函数。它不改原函数，只是包一层默认值。",
       "source": "python-ch03-函数.md"
     },
     {
@@ -1648,6 +1725,50 @@
       "source": "python-ch09-多线程与多进程.md"
     },
     {
+      "id": "python-ch09-多线程与多进程#q16",
+      "category": "Python",
+      "topic": "多线程与多进程",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "什么是竞态条件（race condition）？举一个例子。",
+      "answer": "多个线程/进程**以不可预期的顺序访问共享资源**，导致结果依赖执行时序、不可复现，这就是竞态条件。最典型的是「先检查后使用」：\n\n```python\nif TICKETS > 0:        # 线程 A、B 可能同时通过检查\n    TICKETS -= 1       # 于是卖出超过库存 → 超卖\n```\n\n因为「检查」和「修改」不是原子操作，中间可能被切换。解决办法是**互斥**：用 `Lock` 把这段临界区保护起来，或改用线程安全的 `queue.Queue`。",
+      "source": "python-ch09-多线程与多进程.md"
+    },
+    {
+      "id": "python-ch09-多线程与多进程#q17",
+      "category": "Python",
+      "topic": "多线程与多进程",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "`Lock` 和 `RLock` 有什么区别？什么时候必须用 `RLock`？",
+      "answer": "- `Lock`（互斥锁）：**不可重入**，同一线程第二次 `acquire` 会**永久阻塞**自己（自锁）；\n- `RLock`（可重入锁）：内部记录持有者与重入次数，同一线程可多次 `acquire`，相应地也要 `release` 同样次数才真正释放。\n\n必须用 `RLock` 的场景：**同一个线程内会递归进入临界区**——例如类的公开方法加了锁，内部又调用另一个也加同一把锁的方法。\n\n```python\nimport threading\n\nrlock = threading.RLock()\n\ndef outer():\n    with rlock:\n        inner()\n\ndef inner():\n    with rlock:          # 用普通 Lock 这里会死锁\n        print('ok')\n```",
+      "source": "python-ch09-多线程与多进程.md"
+    },
+    {
+      "id": "python-ch09-多线程与多进程#q18",
+      "category": "Python",
+      "topic": "多线程与多进程",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "`Semaphore` 和 `Lock` 有什么区别？",
+      "answer": "`Lock` 是**二元**的（同一时刻只允许 1 个）；`Semaphore` 是**计数**信号量，允许「最多 N 个」同时进入，用于**限流**（如限制并发请求数、限制连接池大小）。\n\n```python\nimport threading\n\nsem = threading.Semaphore(3)      # 最多 3 个并发\n\ndef task(i):\n    with sem:\n        print(f'任务 {i} 执行中')\n```\n\n耗尽了就阻塞，释放一个才能进下一个。还有个有用的变体 `BoundedSemaphore`，释放次数超过初值会报错，能及早发现 `release` 写多了的 bug。",
+      "source": "python-ch09-多线程与多进程.md"
+    },
+    {
+      "id": "python-ch09-多线程与多进程#q19",
+      "category": "Python",
+      "topic": "多线程与多进程",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "`threading.Event` 有什么用？",
+      "answer": "它是一面**线程间的信号旗**：`set()` 置为真、`clear()` 置为假、`wait(timeout)` 阻塞直到被置真。典型场景是**一个线程等另一个线程发出「可以开始了」的信号**，比如主线程等初始化完成、或通知所有 worker 停止。\n\n```python\nimport threading\n\nstart_event = threading.Event()\n\ndef worker():\n    start_event.wait()          # 一直等到信号\n    print('开始干活')\n\nt = threading.Thread(target=worker)\nt.start()\n\n# 主线程准备好后\nstart_event.set()               # 唤醒所有等待者\nt.join()\n```",
+      "source": "python-ch09-多线程与多进程.md"
+    },
+    {
       "id": "python-ch09-多线程与多进程#q2",
       "category": "Python",
       "topic": "多线程与多进程",
@@ -1656,6 +1777,28 @@
       "tags": [],
       "question": "多线程和多进程怎么选？",
       "answer": "CPU 密集用多进程（真正并行、绕过 GIL）；IO 密集用多线程或协程（开销小、共享内存方便）。进程内存隔离、通信成本高但稳定；线程共享内存、通信方便但易出并发 bug。",
+      "source": "python-ch09-多线程与多进程.md"
+    },
+    {
+      "id": "python-ch09-多线程与多进程#q20",
+      "category": "Python",
+      "topic": "多线程与多进程",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "为什么 `queue.Queue` 不用自己加锁？",
+      "answer": "因为它**内部已经用锁和条件变量实现了线程安全**：`put`/`get` 是原子操作，并且支持 `task_done()` / `join()` 等待全部完成。多个消费者可以放心并发 `get()`，**同一张票不会被取两次**。\n\n```python\nimport queue\n\nq = queue.Queue()\nq.put('票1')          # 生产者\nitem = q.get()        # 消费者（阻塞直到有数据）\n```\n\n所以「任务分发给多个消费者」的场景应优先用 `Queue`，而不是「共享列表 + 自己加锁」——前者更简单也更不容易写错。注意 `queue` 之外，`LifoQueue`（栈）、`PriorityQueue`（优先级）同样是线程安全的。",
+      "source": "python-ch09-多线程与多进程.md"
+    },
+    {
+      "id": "python-ch09-多线程与多进程#q21",
+      "category": "Python",
+      "topic": "多线程与多进程",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "线程池相比手动 `Thread` 有什么优势？",
+      "answer": "- **复用线程**：省去频繁创建/销毁线程的开销；\n- **限定并发数**：避免无限制建线程把系统拖垮；\n- **统一获取结果与异常**：`submit` 返回 `Future`，可用 `as_completed` / `map` 优雅收集；\n- **代码更短**：不用手动维护线程列表、`join` 和结果容器。\n\n```python\nfrom concurrent.futures import ThreadPoolExecutor, as_completed\n\nwith ThreadPoolExecutor(max_workers=4) as pool:\n    futures = [pool.submit(fetch, url) for url in urls]\n    for f in as_completed(futures):\n        print(f.result())\n```\n\n> 记住：**进程池**用 `ProcessPoolExecutor`（绕 GIL，适合 CPU 密集），**线程池**用 `ThreadPoolExecutor`（适合 IO 密集）。",
       "source": "python-ch09-多线程与多进程.md"
     },
     {
@@ -1824,6 +1967,39 @@
       "source": "python-ch04-字符串.md"
     },
     {
+      "id": "python-ch04-字符串#q17",
+      "category": "Python",
+      "topic": "字符串",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "base64 是什么？它和加密有什么区别？",
+      "answer": "base64 是一种**编码**方案，用 64 个可打印字符表示二进制数据，让二进制能安全通过「只支持文本」的通道（邮件、URL、JSON、JWT）。**它没有密钥，任何人都能一键还原，所以不是加密**——绝不能用它保护密码或敏感信息，需要保密请用 AES 等真正的加密算法。编解码用 `base64.b64encode/b64decode`，输入输出都是 `bytes`，体积膨胀约 33%，放进 URL 要用 `urlsafe_b64encode`。",
+      "source": "python-ch04-字符串.md"
+    },
+    {
+      "id": "python-ch04-字符串#q18",
+      "category": "Python",
+      "topic": "字符串",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "`%`、`str.format`、f-string 三种格式化方式怎么选？",
+      "answer": "| 方式 | 写法 | 特点 |\n| --- | --- | --- |\n| `%` | `'%s-%d' % (a, b)` | 老写法，类型要自己对齐，可读性差 |\n| `format` | `'{} {}'.format(a, b)` | 功能全、可复用模板，但啰嗦 |\n| f-string | `f'{a} {b}'` | **运行时最快、可读性最好**（Python 3.6+） |\n\n优先用 **f-string**；需要动态拼接模板字符串（格式串来自变量/配置）时用 `format`；老代码里见到 `%` 知道含义即可。",
+      "source": "python-ch04-字符串.md"
+    },
+    {
+      "id": "python-ch04-字符串#q19",
+      "category": "Python",
+      "topic": "字符串",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "`index` 和 `find` 有什么区别？`count` 呢？",
+      "answer": "- `find(sub)`：找不到返回 **-1**，不抛异常；\n- `index(sub)`：找不到抛 **`ValueError`**；\n- `count(sub)`：统计子串出现次数，不涉及异常。\n\n```python\ns = 'hello'\ns.find('z')     # -1\n# s.index('z')  # ValueError: substring not found\ns.count('l')    # 2\n```",
+      "source": "python-ch04-字符串.md"
+    },
+    {
       "id": "python-ch04-字符串#q2",
       "category": "Python",
       "topic": "字符串",
@@ -1832,6 +2008,39 @@
       "tags": [],
       "question": "`join` 和 `+` 拼接的区别？",
       "answer": "`join` 一次计算总长度后一次性分配，时间复杂度 O(n)；循环里的 `+` 每次都要拷贝整个字符串，复杂度 O(n²)。**循环拼接必须用 `join`**。",
+      "source": "python-ch04-字符串.md"
+    },
+    {
+      "id": "python-ch04-字符串#q20",
+      "category": "Python",
+      "topic": "字符串",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "`startswith` / `endswith` 能一次判断多个前缀吗？",
+      "answer": "可以，传**元组**即可，比写多个 `or` 更简洁：\n\n```python\nname = 'report.pdf'\nname.endswith(('.png', '.jpg', '.pdf'))    # True\nname.startswith(('http://', 'https://'))   # False\n```",
+      "source": "python-ch04-字符串.md"
+    },
+    {
+      "id": "python-ch04-字符串#q21",
+      "category": "Python",
+      "topic": "字符串",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "字符串不可变，这对「字典 key」和「哈希」有什么意义？",
+      "answer": "不可变意味着**哈希值在生命周期内恒定**，这正是字符串能作 `dict` 的 key、能放进 `set` 的前提。如果字符串可变，改动内容会导致哈希值与所在桶不匹配，哈希表立刻失效。同理，`tuple`（元素全部可哈希）能当 key，而 `list` 不能——这些类型都必须满足「可哈希」这个契约。",
+      "source": "python-ch04-字符串.md"
+    },
+    {
+      "id": "python-ch04-字符串#q22",
+      "category": "Python",
+      "topic": "字符串",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "`translate` 和 `maketrans` 有什么用？",
+      "answer": "做**字符级批量映射/删除**，一次遍历完成多个替换，比链式 `replace` 高效（`replace` 每调用一次就新建一个字符串）。\n\n```python\ntable = str.maketrans('aeiou', '12345')     # 建立字符映射表\nprint('hello world'.translate(table))       # h2ll4 w4rld\n\n# 第二、三个参数为空表示「只删除」，删掉所有数字\nprint('1a2b3c'.translate(str.maketrans('', '', '123')))   # abc\n```\n\n常见用途：批量脱敏、统一全半角、清除标点。",
       "source": "python-ch04-字符串.md"
     },
     {
@@ -2000,6 +2209,39 @@
       "source": "python-ch07-常用标准库模块.md"
     },
     {
+      "id": "python-ch07-常用标准库模块#q17",
+      "category": "Python",
+      "topic": "常用标准库模块",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "`uuid` 有哪几个版本？`uuid1` 和 `uuid4` 怎么选？",
+      "answer": "- `uuid1`：时间戳 + MAC 地址，**大致递增、可排序**，但**泄露本机 MAC**，安全性差；\n- `uuid3` / `uuid5`：命名空间 + 名称派生，**同输入永远同输出**（`uuid3` 用 MD5、`uuid5` 用 SHA-1）；\n- `uuid4`：**纯随机**，无隐私顾虑，**通用首选**。\n\n```python\nimport uuid\nprint(uuid.uuid4())                                   # 随机\nprint(uuid.uuid5(uuid.NAMESPACE_DNS, 'a.com'))        # 稳定可复现\n```\n\n若要作数据库主键且希望**有序**（利于索引插入），`uuid4` 不合适——改用自增 ID、雪花算法或「时间前缀 + 随机后缀」。",
+      "source": "python-ch07-常用标准库模块.md"
+    },
+    {
+      "id": "python-ch07-常用标准库模块#q18",
+      "category": "Python",
+      "topic": "常用标准库模块",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "为什么读写文件推荐 `with open(...)`？不用 `with` 会怎样？",
+      "answer": "`with` 是**上下文管理器**，无论中途是否抛异常，退出时都会**自动关闭文件**。手写 `open`/`close` 一旦中间报错，`close` 就被跳过，文件句柄泄漏，长期运行的程序会耗尽句柄或导致数据未刷盘。\n\n```python\nwith open('a.txt', encoding='utf-8') as f:\n    data = f.read()      # 离开 with 块自动 close，异常也照关\n```",
+      "source": "python-ch07-常用标准库模块.md"
+    },
+    {
+      "id": "python-ch07-常用标准库模块#q19",
+      "category": "Python",
+      "topic": "常用标准库模块",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "读文件为什么要显式指定 `encoding`？",
+      "answer": "因为 `open()` 默认按**操作系统的首选编码**解码：Linux/macOS 通常是 UTF-8，**Windows 常是 GBK/cp936**。同一份 UTF-8 文件在 Windows 上读就会 `UnicodeDecodeError` 或乱码。显式写 `encoding='utf-8'` 才能跨平台一致。\n\n```python\nwith open('a.txt', encoding='utf-8') as f:    # 永远显式写\n    print(f.read())\n\n# 带 BOM 的 UTF-8 文件用 utf-8-sig 读，自动去掉开头的 \\ufeff\nwith open('bom.txt', encoding='utf-8-sig') as f:\n    print(f.read())\n```",
+      "source": "python-ch07-常用标准库模块.md"
+    },
+    {
       "id": "python-ch07-常用标准库模块#q2",
       "category": "Python",
       "topic": "常用标准库模块",
@@ -2008,6 +2250,39 @@
       "tags": [],
       "question": "json 和 pickle 的区别？",
       "answer": "json 是跨语言文本格式，安全但只支持基础类型；pickle 是 Python 专有二进制协议，能序列化几乎任意对象，但**反序列化不可信数据会执行任意代码（RCE），有严重安全风险**，只用于本地可信数据。",
+      "source": "python-ch07-常用标准库模块.md"
+    },
+    {
+      "id": "python-ch07-常用标准库模块#q20",
+      "category": "Python",
+      "topic": "常用标准库模块",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "`shutil` 常用在什么场景？`copy`、`copy2`、`copytree` 有什么区别？",
+      "answer": "`shutil` 负责**高层文件/目录操作**（复制、移动、删除目录树、打包）。\n\n| 方法 | 行为 |\n| --- | --- |\n| `shutil.copy(src, dst)` | 复制文件内容 + **权限**，不保留时间戳 |\n| `shutil.copy2(src, dst)` | 在 `copy` 基础上**保留元数据**（时间戳等），最常用 |\n| `shutil.copytree(src, dst)` | 递归复制整个目录树 |\n| `shutil.move(src, dst)` | 移动（跨磁盘时退化为复制 + 删除） |\n| `shutil.rmtree(path)` | **递归删除整个目录**，不可恢复，慎用 |\n| `shutil.make_archive(name, 'zip', root)` | 打包成 zip/tar |\n\n> `rmtree` 是**不可逆**操作，别把变量拼错路径；可先 `print` 出目标路径确认。",
+      "source": "python-ch07-常用标准库模块.md"
+    },
+    {
+      "id": "python-ch07-常用标准库模块#q21",
+      "category": "Python",
+      "topic": "常用标准库模块",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "`glob` 的通配符 `*`、`?`、`**` 分别匹配什么？",
+      "answer": "- `*`：匹配**任意多个字符**，但**不跨目录**；\n- `?`：匹配**恰好一个字符**；\n- `**`：匹配**任意多层目录**，必须配 `recursive=True` 才生效。\n\n```python\nimport glob\n\nglob.glob('*.py')                                 # 当前目录的 .py\nglob.glob('data/*.csv')                           # data 下一层\nglob.glob('**/*.py', recursive=True)              # 递归所有子目录\n```\n\n> 新代码更推荐 `pathlib`：`Path('.').rglob('*.py')` 语义更清晰，返回的是 `Path` 对象。",
+      "source": "python-ch07-常用标准库模块.md"
+    },
+    {
+      "id": "python-ch07-常用标准库模块#q22",
+      "category": "Python",
+      "topic": "常用标准库模块",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "除了存密码，`hashlib` 还能做什么？",
+      "answer": "三大用途：\n\n1. **文件完整性校验**——下载后比对哈希，确认没被篡改或损坏（分块 `update` 可处理大文件）：\n\n```python\nimport hashlib\n\nh = hashlib.sha256()\nwith open('big.iso', 'rb') as f:\n    for chunk in iter(lambda: f.read(8192), b''):\n        h.update(chunk)\nprint(h.hexdigest())\n```\n\n2. **数字签名 / 验签**——把参数按 key 排序后拼成 `a=1&b=2`，加盐再哈希，用于接口防篡改（`hmac` 更规范）；\n3. **内容寻址 / 去重**——用内容哈希作文件名或唯一键。\n\n> **哈希不是加密**：不可逆、无密钥。要「能还原」得用对称/非对称加密；要「防篡改 + 验证来源」用 `hmac` + 密钥。",
       "source": "python-ch07-常用标准库模块.md"
     },
     {
@@ -2154,6 +2429,61 @@
       "source": "python-ch08-异常处理.md"
     },
     {
+      "id": "python-ch08-异常处理#q15",
+      "category": "Python",
+      "topic": "异常处理",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "logging 有哪些日志级别？默认输出到哪一级？",
+      "answer": "从低到高：`DEBUG < INFO < WARNING < ERROR < CRITICAL`。**root logger 默认级别是 WARNING**，所以不配置的话 `debug`/`info` 都不输出。\n\n```python\nimport logging\nlogging.basicConfig(level=logging.INFO)   # 不设的话 info 看不到\nlogging.info('这行会输出')\nlogging.debug('这行默认被过滤')\n```",
+      "source": "python-ch08-异常处理.md"
+    },
+    {
+      "id": "python-ch08-异常处理#q16",
+      "category": "Python",
+      "topic": "异常处理",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "logging 里 Logger、Handler、Formatter 各自负责什么？",
+      "answer": "- **Logger**：程序调用的入口，按名字（`app.db`）形成**树状层级**，决定「这条日志要不要处理」（级别过滤）；\n- **Handler**：决定日志**输出到哪**（控制台、文件、网络、邮件），可挂多个；\n- **Formatter**：决定日志的**文本格式**（时间、级别、logger 名、消息）。\n\n三者关系：`Logger → 若干 Handler → 每个 Handler 配一个 Formatter`。日志会沿 logger 层级向父级**传播（propagate）**，所以同一个 logger 挂 handler 又没关 propagate，就会和 root 的 handler 一起重复输出。",
+      "source": "python-ch08-异常处理.md"
+    },
+    {
+      "id": "python-ch08-异常处理#q17",
+      "category": "Python",
+      "topic": "异常处理",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "为什么日志会重复打印？怎么解决？",
+      "answer": "常见两个原因：\n\n1. **propagate 未关闭**：子 logger 处理完又传给 root，root 的 handler 再打一遍 → 设 `logger.propagate = False`（或配置文件里 `propagate=0`）；\n2. **`addHandler` 被调用多次**：例如模块被重复导入或在函数里反复 `addHandler` → 先判断 `if not logger.handlers:` 再添加。\n\n```python\nlog = logging.getLogger('app')\nlog.propagate = False\nif not log.handlers:\n    log.addHandler(handler)\n```",
+      "source": "python-ch08-异常处理.md"
+    },
+    {
+      "id": "python-ch08-异常处理#q18",
+      "category": "Python",
+      "topic": "异常处理",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "日志文件越来越大怎么办？",
+      "answer": "用滚动处理器，别用普通 `FileHandler`：\n\n```python\nfrom logging.handlers import RotatingFileHandler, TimedRotatingFileHandler\n\n# 按大小滚动：单个 10MB，最多保留 5 个历史文件\nRotatingFileHandler('app.log', maxBytes=10 * 1024 * 1024, backupCount=5, encoding='utf-8')\n\n# 按时间滚动：每天切一个，保留 7 天\nTimedRotatingFileHandler('app.log', when='midnight', backupCount=7, encoding='utf-8')\n```\n\n生产环境通常还会把日志交给 ELK / Loki 等集中式平台，本地只留最近若干天。",
+      "source": "python-ch08-异常处理.md"
+    },
+    {
+      "id": "python-ch08-异常处理#q19",
+      "category": "Python",
+      "topic": "异常处理",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "为什么 `log.info(f'user={uid}')` 不推荐？应该怎么写？",
+      "answer": "因为它**无论级别是否开启都会先做字符串格式化**，白白浪费性能；当日志被过滤掉时这笔开销纯属浪费。正确写法是把参数**延迟拼接**：\n\n```python\nlog.info('user=%s action=%s', uid, action)     # 推荐：级别不够时不做格式化\n# log.info(f'user={uid} action={action}')     # 不推荐\n```\n\n额外好处：参数中的特殊字符不会被当成格式串解析，避免**日志注入**。",
+      "source": "python-ch08-异常处理.md"
+    },
+    {
       "id": "python-ch08-异常处理#q2",
       "category": "Python",
       "topic": "异常处理",
@@ -2162,6 +2492,17 @@
       "tags": [],
       "question": "`finally` 里写 `return` 会怎样？",
       "answer": "会覆盖前面的返回值，并且吞掉未处理的异常，属于明确禁止的写法。",
+      "source": "python-ch08-异常处理.md"
+    },
+    {
+      "id": "python-ch08-异常处理#q20",
+      "category": "Python",
+      "topic": "异常处理",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "`dictConfig` 和 `fileConfig` 怎么选？",
+      "answer": "`dictConfig`（Python 3.2+）**是现在推荐的方式**：纯 Python 字典，能用代码动态生成、支持 `RotatingFileHandler` 等全部特性、可设 `disable_existing_loggers: False` 避免禁用第三方库日志。`fileConfig` 用 INI 文件，好处是改配置不用改代码，但**默认会禁用已有 logger**，边角场景容易踩坑。新项目一律用 `dictConfig`。",
       "source": "python-ch08-异常处理.md"
     },
     {
@@ -2522,6 +2863,72 @@
       "source": "python-ch02-数据结构.md"
     },
     {
+      "id": "python-ch02-数据结构#q14",
+      "category": "Python",
+      "topic": "数据结构",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "list 和 tuple 的区别？各自适合什么场景？",
+      "answer": "list **可变**、有丰富的增删改方法、不可哈希；tuple **不可变**、可哈希、可作 dict 的 key，创建和遍历略快、内存占用更小。经验法则：**结构固定的记录用 tuple**（如坐标、数据库一行），**需要增删改的集合用 list**。注意 tuple 的不可变是「元素引用不可变」——`t = ([1, 2], 3)` 里的列表仍可修改。",
+      "source": "python-ch02-数据结构.md"
+    },
+    {
+      "id": "python-ch02-数据结构#q15",
+      "category": "Python",
+      "topic": "数据结构",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "列表去重有哪几种方法？效率和保序性如何？",
+      "answer": "| 方法 | 复杂度 | 是否保序 |\n| --- | --- | --- |\n| `list(dict.fromkeys(lst))` | O(n) | **保序**（推荐） |\n| `list(set(lst))` | O(n) | 打乱顺序 |\n| 手工双循环 | O(n²) | 保序 |\n\n```python\nlst = [3, 1, 3, 2, 1]\nlist(dict.fromkeys(lst))   # [3, 1, 2]\nlist(set(lst))             # 顺序不定\n```\n\n面试常见错误答案是「set 最快」，但**要求保序时 `dict.fromkeys` 才是正解**，两者都是 O(n)。元素不可哈希（如 list）时只能手工去重。",
+      "source": "python-ch02-数据结构.md"
+    },
+    {
+      "id": "python-ch02-数据结构#q16",
+      "category": "Python",
+      "topic": "数据结构",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "字典为什么查询快？底层是什么结构？",
+      "answer": "CPython 的 dict 是**哈希表**（开放寻址法）。查找时先对 key 求哈希、映射到槽位，命中就比较 `==` 确认。所以平均查询/插入/删除都是 **O(1)**，最坏 O(n)（大量哈希冲突时）。当装载率超过约 2/3 会触发扩容（重新分配并 rehash）。Python 3.7+ 的 dict **保证插入顺序**，这是语言规范而非实现细节。",
+      "source": "python-ch02-数据结构.md"
+    },
+    {
+      "id": "python-ch02-数据结构#q17",
+      "category": "Python",
+      "topic": "数据结构",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "为什么 dict 的 key 必须是可哈希的？哪些类型能当 key？",
+      "answer": "哈希表要靠 key 的哈希值定位槽位，所以 key 必须满足：**实现 `__hash__` 与 `__eq__`，且哈希值在生命周期内不变**。可变对象（list、dict、set）因为内容会变、哈希值不稳定，所以不可哈希、不能当 key。可作 key 的有：`int`、`float`、`str`、`tuple`（且元素全部可哈希）、`frozenset`、自定义的不可变对象（实现了 `__hash__`）。",
+      "source": "python-ch02-数据结构.md"
+    },
+    {
+      "id": "python-ch02-数据结构#q18",
+      "category": "Python",
+      "topic": "数据结构",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "set 是怎么实现去重的？",
+      "answer": "set 同样是**哈希表**。插入元素时先算 `hash(x)` 定位桶：桶为空则放入；桶已有元素则用 `==` 逐个比较，相等就判定为重复、不插入。所以去重依赖「**哈希值不同 ⇒ 元素必不同；哈希值相同 ⇒ 再用 `==` 确认**」。这也解释了为什么 set 里的元素必须可哈希。",
+      "source": "python-ch02-数据结构.md"
+    },
+    {
+      "id": "python-ch02-数据结构#q19",
+      "category": "Python",
+      "topic": "数据结构",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "`list.sort()` 和 `sorted()` 有什么区别？",
+      "answer": "`list.sort()` 是**原地排序**，返回 `None`（所以 `b = a.sort()` 是个经典坑）；`sorted(iterable)` 返回**新列表**，原对象不变，可作用于任何可迭代对象（tuple、dict、生成器）。两者都**稳定**，底层都是 Timsort，均支持 `key=` 和 `reverse=`。",
+      "source": "python-ch02-数据结构.md"
+    },
+    {
       "id": "python-ch02-数据结构#q2",
       "category": "Python",
       "topic": "数据结构",
@@ -2530,6 +2937,28 @@
       "tags": [],
       "question": "dict 的 key 有什么要求？为什么 list 不行？",
       "answer": "key 必须**可哈希**。list 是可变对象，没有实现 `__hash__`（返回 `None`），一旦改变内容哈希值就会变，会破坏哈希表。可用 tuple、str、int、frozenset。",
+      "source": "python-ch02-数据结构.md"
+    },
+    {
+      "id": "python-ch02-数据结构#q20",
+      "category": "Python",
+      "topic": "数据结构",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "为什么 `in` 对 list 是 O(n)、对 set/dict 是 O(1)？怎么优化？",
+      "answer": "list 是顺序存储，`in` 只能从头逐个比较；set/dict 是哈希表，`in` 一次哈希定位即可。优化手段就是**把「频繁查找」的容器从 list 换成 set 或 dict**：\n\n```python\n# 慢：每次查找 O(n)，整体 O(n*m)\nfor x in big_list:\n    if x in small_list: ...\n\n# 快：先把被查集合转成 set，整体 O(n+m)\nsmall = set(small_list)\nfor x in big_list:\n    if x in small: ...\n```",
+      "source": "python-ch02-数据结构.md"
+    },
+    {
+      "id": "python-ch02-数据结构#q21",
+      "category": "Python",
+      "topic": "数据结构",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "浅拷贝有哪几种写法？`lst[:]`、`list(lst)`、`copy.copy(lst)` 有区别吗？",
+      "answer": "对**列表**而言三者**等价**，都只复制最外层：\n\n```python\nimport copy\na = [[1, 2], [3]]\nb, c, d = a[:], list(a), copy.copy(a)\nb[0].append(9)\nprint(a)   # [[1, 2, 9], [3]]  内层仍是同一个对象\n```\n\n对 dict 用 `dict(d)` 或 `d.copy()`；对 set 用 `set(s)` 或 `s.copy()`。**嵌套结构必须用 `copy.deepcopy()`** 才能彻底隔离。",
       "source": "python-ch02-数据结构.md"
     },
     {
@@ -2698,6 +3127,39 @@
       "source": "python-ch05-正则表达式.md"
     },
     {
+      "id": "python-ch05-正则表达式#q17",
+      "category": "Python",
+      "topic": "正则表达式",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "命名分组 `(?P<name>...)` 比编号分组好在哪？",
+      "answer": "编号分组靠 `\\1`、`group(1)` 引用，正则一改顺序就全乱；命名分组用 `(?P<year>\\d{4})` 定义，可用 `group('year')` 或 `(?P=year)` 后向引用，**语义自解释、改结构不易错**。\n\n```python\nimport re\n\nm = re.match(r'(?P<y>\\d{4})-(?P<m>\\d{2})-(?P<d>\\d{2})', '2026-09-21')\nprint(m.group('y'), m.groupdict())    # 2026 {'y': '2026', 'm': '09', 'd': '21'}\n```",
+      "source": "python-ch05-正则表达式.md"
+    },
+    {
+      "id": "python-ch05-正则表达式#q18",
+      "category": "Python",
+      "topic": "正则表达式",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "`re.escape` 有什么用？",
+      "answer": "把字符串里的**正则元字符全部转义**，让它变回「普通文本」。用于「用户输入要当作字面量去匹配」的场景，否则用户输入 `.`、`*`、`(` 会导致语法错误或误匹配。\n\n```python\nimport re\n\nkw = 'a.b*c'\nprint(re.escape(kw))                       # a\\.b\\*c\nre.search(re.escape(kw), 'x a.b*c y')      # 能正确按字面量匹配\n```",
+      "source": "python-ch05-正则表达式.md"
+    },
+    {
+      "id": "python-ch05-正则表达式#q19",
+      "category": "Python",
+      "topic": "正则表达式",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "`findall` 和 `finditer` 怎么选？",
+      "answer": "`findall` 返回**列表**（一次性构造全部结果）；`finditer` 返回**迭代器**，逐个产出 `Match` 对象。文本很大、或需要每个匹配的**位置信息**（`start()`/`end()`/`group()`）时用 `finditer`，更省内存也更灵活。\n\n```python\nfor m in re.finditer(r'\\d+', 'a1b22c333'):\n    print(m.group(), m.start(), m.end())\n```",
+      "source": "python-ch05-正则表达式.md"
+    },
+    {
       "id": "python-ch05-正则表达式#q2",
       "category": "Python",
       "topic": "正则表达式",
@@ -2706,6 +3168,39 @@
       "tags": [],
       "question": "什么是贪婪匹配？怎么改成非贪婪？",
       "answer": "贪婪指量词尽可能多地匹配字符。在量词（`*`、`+`、`?`、`{m,n}`）后加 `?` 即可转为非贪婪。底层原因是 NFA 引擎的回溯机制：贪婪先吃满再回吐，懒惰先吃最少再补。",
+      "source": "python-ch05-正则表达式.md"
+    },
+    {
+      "id": "python-ch05-正则表达式#q20",
+      "category": "Python",
+      "topic": "正则表达式",
+      "type": "代码",
+      "difficulty": "中",
+      "tags": [],
+      "question": "写一个密码强度校验正则（至少 8 位，且同时含字母和数字）。",
+      "answer": "```python\nimport re\n\ndef strong_pwd(pwd):\n    return bool(re.fullmatch(r'(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}', pwd))\n\nprint(strong_pwd('abc12345'))   # True\nprint(strong_pwd('abcdefgh'))   # False\nprint(strong_pwd('12345678'))   # False\n```\n\n思路：用**前瞻断言**做「必须包含某类字符」的检查，`(?=.*[A-Za-z])` 表示「后面某处要有字母」、`(?=.*\\d)` 表示要有数字，最后用 `[A-Za-z\\d]{8,}` 约束长度与允许的字符集。用 `fullmatch` 保证整串匹配。",
+      "source": "python-ch05-正则表达式.md"
+    },
+    {
+      "id": "python-ch05-正则表达式#q21",
+      "category": "Python",
+      "topic": "正则表达式",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "为什么不该用正则解析 HTML？",
+      "answer": "HTML **不是正则语言**：标签可嵌套、属性可换行、注释与 `<script>` 里可能有伪标签，正则无法正确处理嵌套结构。典型翻车是 `<div>.*</div>` 在多个 div 时会贪婪吞掉整段。正确做法是用 **HTML 解析器**（`BeautifulSoup`、`lxml`、`html.parser`）。只有「已知格式非常固定的片段」（如某个固定模板里的单个链接）才适合用正则应个急。",
+      "source": "python-ch05-正则表达式.md"
+    },
+    {
+      "id": "python-ch05-正则表达式#q22",
+      "category": "Python",
+      "topic": "正则表达式",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "`^`/`$` 和 `\\A`/`\\Z` 有什么区别？",
+      "answer": "- `^` / `$`：默认匹配**字符串的开头/结尾**，但加了 `re.M` 后变成匹配**每一行的开头/结尾**；\n- `\\A` / `\\Z`：**永远只匹配整个字符串的首尾**，不受 `re.M` 影响。\n\n```python\ntext = 'ab\\ncd'\nre.findall(r'^.', text)         # ['a']       默认\nre.findall(r'^.', text, re.M)   # ['a', 'c']  逐行\nre.findall(r'\\A.', text, re.M)  # ['a']       始终只匹配开头\n```\n\n需要「整串就是它」而非「某一行是它」时，用 `\\A...\\Z`（或直接 `fullmatch`）更安全。",
       "source": "python-ch05-正则表达式.md"
     },
     {
@@ -2830,6 +3325,83 @@
       "source": "python-ch01-语法基础.md"
     },
     {
+      "id": "python-ch01-语法基础#q13",
+      "category": "Python",
+      "topic": "语法基础",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "`pass` 语句有什么用？",
+      "answer": "`pass` 是**空操作语句**，执行它什么都不发生，纯粹为了「语法上需要一条语句」时占位。典型场景：先搭好函数/类的骨架、故意留一个空分支、或捕获异常后什么都不做。\n\n```python\ndef todo():\n    pass          # 占位，避免 IndentationError\n\ntry:\n    risky()\nexcept Exception:\n    pass          # 有意忽略（生产环境应记日志，别静默吞掉）\n```",
+      "source": "python-ch01-语法基础.md"
+    },
+    {
+      "id": "python-ch01-语法基础#q14",
+      "category": "Python",
+      "topic": "语法基础",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "`break`、`continue`、`return` 的区别？",
+      "answer": "- `break`：终止**当前这一层**循环，跳到循环之后继续执行；\n- `continue`：结束本次迭代，进入下一次循环；\n- `return`：直接结束**整个函数**并返回，连外层循环也一并退出。\n\n嵌套循环里 `break` 只跳出最内层，需要跳出多层得用标志位、函数 `return` 或异常。",
+      "source": "python-ch01-语法基础.md"
+    },
+    {
+      "id": "python-ch01-语法基础#q15",
+      "category": "Python",
+      "topic": "语法基础",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "循环的 `else` 子句什么时候执行？",
+      "answer": "`for...else` / `while...else` 的 `else` 只在循环**正常走完、没有被 `break` 打断**时执行。语义是「没找到 / 没被打断时的分支」，和 `if-else` 的「否则」没有任何关系。\n\n```python\nfor n in range(2, 10):\n    for x in range(2, n):\n        if n % x == 0:\n            break\n    else:\n        print(n, '是质数')   # 内层循环没被 break，才执行\n```",
+      "source": "python-ch01-语法基础.md"
+    },
+    {
+      "id": "python-ch01-语法基础#q16",
+      "category": "Python",
+      "topic": "语法基础",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "`.py` 和 `.pyc` 有什么区别？`__pycache__` 是什么？",
+      "answer": "`.py` 是源码，`.pyc` 是**编译后的字节码**。Python 执行时先把源码编译成字节码，再交给虚拟机执行；为省去重复编译，会把字节码缓存到 `__pycache__/` 目录（文件名形如 `module.cpython-312.pyc`）。`.pyc` 里存的是字节码不是机器码，**跨平台、可反编译**，所以删掉它没影响（下次自动重建），也不能替代源码分发。",
+      "source": "python-ch01-语法基础.md"
+    },
+    {
+      "id": "python-ch01-语法基础#q17",
+      "category": "Python",
+      "topic": "语法基础",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "`range()` 返回列表吗？和 Python 2 的 `range` / `xrange` 有什么区别？",
+      "answer": "Python 3 的 `range()` 返回**惰性序列对象**（不是列表），只占用固定内存，支持索引与 `len()`。Python 2 的 `range()` 直接返回列表，`xrange()` 才是惰性版本。所以 Python 3 里 `range(10**9)` 也不会爆内存，需要列表时才 `list(range(...))`。",
+      "source": "python-ch01-语法基础.md"
+    },
+    {
+      "id": "python-ch01-语法基础#q18",
+      "category": "Python",
+      "topic": "语法基础",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "遍历列表时修改列表会发生什么？怎么正确处理？",
+      "answer": "会**漏掉元素**：`for` 依赖内部索引递增，删除元素后后面的元素前移，导致下一个元素被跳过。正确做法是**遍历副本**或直接生成新列表：\n\n```python\nnums = [1, 2, 3, 4]\nfor n in nums[:]:              # 遍历副本\n    if n % 2 == 0:\n        nums.remove(n)\n\nnums = [n for n in nums if n % 2 != 0]   # 更推荐：推导式造新列表\n```",
+      "source": "python-ch01-语法基础.md"
+    },
+    {
+      "id": "python-ch01-语法基础#q19",
+      "category": "Python",
+      "topic": "语法基础",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "`assert` 和普通条件判断有什么区别？什么时候不该用 `assert`？",
+      "answer": "`assert` 是**调试断言**，条件为假时抛 `AssertionError`；且**在 `-O` 优化模式下会被整体移除**。因此它只适合「绝不可能发生」的内部自检。**不要用 assert 做参数校验或业务校验**（线上可能被优化掉而不生效），这类校验应写显式 `if ...: raise ValueError(...)`。",
+      "source": "python-ch01-语法基础.md"
+    },
+    {
       "id": "python-ch01-语法基础#q2",
       "category": "Python",
       "topic": "语法基础",
@@ -2838,6 +3410,17 @@
       "tags": [],
       "question": "什么是小整数池和字符串驻留？",
       "answer": "CPython 为优化性能，会**缓存**部分对象复用：\n\n- 小整数池：`-5` 到 `256` 之间的整数全局唯一\n- 字符串驻留：仅含字母、数字、下划线的字符串会被 intern（编译期常量还会自动合并）\n\n```python\na = 256; b = 256\na is b        # True\na = 257; b = 257\na is b        # False（交互式逐行执行时；写在同一个 .py 文件里可能因常量折叠为 True）\n```\n\n> 面试官常追问：为什么 `a=257;b=257` 有时 `is` 为 True？答：同一个代码块的常量会被折叠复用，但这是实现细节，比较值请一律用 `==`。",
+      "source": "python-ch01-语法基础.md"
+    },
+    {
+      "id": "python-ch01-语法基础#q20",
+      "category": "Python",
+      "topic": "语法基础",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "为什么 Python 用缩进表示代码块？混用 Tab 和空格会怎样？",
+      "answer": "Python 用**缩进**划分代码块，强制统一风格、省掉花括号。缩进相同的行属于同一块，块结束靠「缩进变浅」体现。Tab 与空格混用时，虽然 Python 3 会报 `TabError`（不一致的缩进方式），但不同编辑器把 Tab 显示成不同宽度，极易造成「看着对齐、实际不对齐」的隐患，**统一用 4 个空格**是 PEP 8 的要求。",
       "source": "python-ch01-语法基础.md"
     },
     {
@@ -3028,6 +3611,17 @@
       "source": "python-ch06-面向对象.md"
     },
     {
+      "id": "python-ch06-面向对象#q19",
+      "category": "Python",
+      "topic": "面向对象",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "面向对象的三大特性在 Python 里分别怎么体现？",
+      "answer": "- **封装**：用 `_name`（约定私有）和 `__name`（触发名称改写 `_类名__name`）隐藏内部实现，通过 `property` 提供受控的读写入口；\n- **继承**：`class Child(Parent)` 复用并扩展父类，`super()` 沿 MRO 调用父类实现；\n- **多态**：**鸭子类型**——不检查类型，只看对象有没有对应方法，所以 `len()`、`for`、`with` 能作用于任何实现了相应协议的对象。",
+      "source": "python-ch06-面向对象.md"
+    },
+    {
       "id": "python-ch06-面向对象#q2",
       "category": "Python",
       "topic": "面向对象",
@@ -3036,6 +3630,61 @@
       "tags": [],
       "question": "`__new__` 和 `__init__` 的区别？",
       "answer": "`__new__` 是静态方法，负责**创建并返回**实例（是真正的\"构造器\"）；`__init__` 负责**初始化**已有实例，不返回值。实现单例、不可变子类（如继承 `int`/`tuple`）时需要重写 `__new__`。`__new__` 忘记 `return` 会导致 `__init__` 不执行、构造出 `None`。",
+      "source": "python-ch06-面向对象.md"
+    },
+    {
+      "id": "python-ch06-面向对象#q20",
+      "category": "Python",
+      "topic": "面向对象",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "`isinstance()` 和 `type()` 有什么区别？为什么推荐用 `isinstance`？",
+      "answer": "`type(obj)` 返回**精确类型**，不做继承判断；`isinstance(obj, T)` 会**沿继承链判断**，子类实例也返回 `True`，而且第二个参数可以是**元组**（多类型判断）。因此类型判断优先 `isinstance`。\n\n```python\nclass Animal: pass\nclass Dog(Animal): pass\n\nd = Dog()\ntype(d) is Animal            # False  只看精确类型\nisinstance(d, Animal)        # True   认继承关系\nisinstance(d, (int, Animal)) # True   支持元组\n```\n\n> 注意 `bool` 是 `int` 的子类，所以 `isinstance(True, int)` 为 `True`；要区分请用 `type(x) is bool`。",
+      "source": "python-ch06-面向对象.md"
+    },
+    {
+      "id": "python-ch06-面向对象#q21",
+      "category": "Python",
+      "topic": "面向对象",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "抽象基类（`abc`）有什么用？",
+      "answer": "给「鸭子类型」加上**强制约束**：用 `ABC` + `@abstractmethod` 声明必须实现的接口，子类没实现就无法实例化。适用于框架/基类需要规定子类契约的场景。\n\n```python\nfrom abc import ABC, abstractmethod\n\nclass Shape(ABC):\n    @abstractmethod\n    def area(self): ...\n\nclass Circle(Shape):\n    def __init__(self, r): self.r = r\n    def area(self): return 3.14 * self.r ** 2\n\n# Shape()      # TypeError: 不能实例化抽象类\n# class Bad(Shape): pass\n# Bad()        # TypeError: 没实现 area\n```",
+      "source": "python-ch06-面向对象.md"
+    },
+    {
+      "id": "python-ch06-面向对象#q22",
+      "category": "Python",
+      "topic": "面向对象",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "反射是什么？`getattr` / `setattr` / `hasattr` 有什么用？",
+      "answer": "反射指**用字符串动态操作属性和方法**，让程序在运行期决定调用什么。常用于插件加载、配置驱动、ORM 字段映射、序列化框架。\n\n```python\nclass User:\n    def __init__(self, name): self.name = name\n    def greet(self): return f'hi {self.name}'\n\nu = User('YJY')\nprint(hasattr(u, 'name'))                 # True\nprint(getattr(u, 'name'))                 # YJY\nprint(getattr(u, 'age', 0))               # 0     不存在时给默认值，避免 AttributeError\nmethod = getattr(u, 'greet')              # 取到方法再调用\nprint(method())\nsetattr(u, 'age', 18)                     # 动态设置属性\n```",
+      "source": "python-ch06-面向对象.md"
+    },
+    {
+      "id": "python-ch06-面向对象#q23",
+      "category": "Python",
+      "topic": "面向对象",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "`__call__` 有什么用？",
+      "answer": "让**实例像函数一样被调用**（可调用对象）。适合「带状态的函数」——比闭包更清晰，比普通函数能携带更多配置。\n\n```python\nclass Counter:\n    def __init__(self): self.n = 0\n    def __call__(self, step=1):\n        self.n += step\n        return self.n\n\nc = Counter()\nprint(c(), c(3), c())     # 1 4 5\nprint(callable(c))        # True\n```",
+      "source": "python-ch06-面向对象.md"
+    },
+    {
+      "id": "python-ch06-面向对象#q24",
+      "category": "Python",
+      "topic": "面向对象",
+      "type": "简答",
+      "difficulty": "中",
+      "tags": [],
+      "question": "为什么设计上常说「组合优于继承」？",
+      "answer": "继承是**编译期/定义期**绑定的强耦合：父类一改，所有子类都受影响；多层继承还会带来 MRO 复杂度和「脆弱基类」问题。组合在**运行期**装配，耦合更松、更易替换与单测。经验法则：**「是一个（is-a）」用继承，「有一个（has-a）」用组合**；能用组合表达就别用继承。",
       "source": "python-ch06-面向对象.md"
     },
     {

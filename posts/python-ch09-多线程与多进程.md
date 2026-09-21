@@ -3,7 +3,7 @@ title: Python 基础笔记 · 第 9 章：多线程与多进程
 date: 2026-09-03
 category: Python 基础
 tags: [Python, 学习笔记, 面试题, 并发编程, GIL, 多线程, 多进程]
-summary: GIL 到底限制了什么、threading 与锁的正确用法、multiprocessing 与进程池、concurrent.futures 统一接口，以及 CPU 密集与 IO 密集的并发选型决策。
+summary: GIL 到底限制了什么、threading 与锁的正确用法、RLock/Semaphore/Event 的适用场景、multiprocessing 与进程池、concurrent.futures 统一接口，售票系统从超卖到加锁到 Queue 的完整实战，以及 CPU 密集与 IO 密集的并发选型决策，附 21 道高频面试题。
 ---
 
 ## 一、核心知识点
@@ -261,6 +261,110 @@ CPU_COUNT = os.cpu_count()
 # IO 密集：核数 × (1 + IO等待时间 / CPU计算时间)，常见 2~4 倍起步
 ```
 
+### 16. 实战：售票系统（超卖 → 加锁 → 用 Queue）
+
+这个案例把「竞态条件」演一遍，是理解锁最直观的例子。
+
+**版本一：不加锁 → 超卖**
+
+```python
+import threading
+import time
+
+TICKETS = 10
+
+def sell_unsafe(seller):
+    """先检查后扣减，两步之间可能被线程切换打断。"""
+    global TICKETS
+    while TICKETS > 0:
+        if TICKETS > 0:
+            time.sleep(0.001)        # 模拟查询余票的耗时，主动让出执行权
+            TICKETS -= 1             # 检查与扣减不是一个原子操作 → 超卖
+            print(f'{seller} 卖出 1 张，余票 {TICKETS}')
+
+threads = [threading.Thread(target=sell_unsafe, args=(f'窗口{i}',)) for i in range(1, 4)]
+for t in threads:
+    t.start()
+for t in threads:
+    t.join()
+
+print('最终余票:', TICKETS)          # 可能为负数！
+```
+
+根因：`if TICKETS > 0` 和 `TICKETS -= 1` 之间存在**窗口期**，多个线程可能同时通过检查，于是卖出超过 10 张。
+
+**版本二：加锁 → 检查与扣减变成原子操作**
+
+```python
+import threading
+import time
+
+TICKETS = 10
+lock = threading.Lock()
+
+def sell_safe(seller):
+    global TICKETS
+    while True:
+        with lock:                       # 临界区：同一时刻只有一个线程能进
+            if TICKETS <= 0:
+                break
+            time.sleep(0.001)
+            TICKETS -= 1
+            left = TICKETS
+        print(f'{seller} 卖出 1 张，余票 {left}')
+
+threads = [threading.Thread(target=sell_safe, args=(f'窗口{i}',)) for i in range(1, 4)]
+for t in threads:
+    t.start()
+for t in threads:
+    t.join()
+
+print('最终余票:', TICKETS)              # 恒为 0，不会超卖
+```
+
+要点：锁要**包住「检查 + 修改」这一整段**，只锁扣减那一行是没用的；`with lock` 保证异常时也会释放，比手写 `acquire/release` 安全。
+
+**版本三：用 `queue.Queue` 把票变成任务**
+
+`Queue` 的 `get()` 是**线程安全**的，一张票只能被一个 worker 取走，天然不会重复。
+
+```python
+import queue
+import threading
+
+tickets = queue.Queue()
+for i in range(1, 11):
+    tickets.put(i)                       # 10 张票 = 10 个任务
+
+sold = []                                # CPython 里 list.append 是原子的，可放心用
+
+def worker(name):
+    while True:
+        try:
+            ticket = tickets.get_nowait()    # 拿走即出队，其他线程拿不到同一张
+        except queue.Empty:
+            return
+        sold.append((name, ticket))
+
+threads = [threading.Thread(target=worker, args=(f'窗口{c}',)) for c in 'ABC']
+for t in threads:
+    t.start()
+for t in threads:
+    t.join()
+
+print('共售出:', len(sold), '张')          # 恒为 10
+```
+
+**三种写法的选择：**
+
+| 场景 | 推荐做法 |
+| --- | --- |
+| 共享一个计数器/余额 | `Lock` 包住「检查 + 修改」 |
+| 任务分发给多个消费者 | `queue.Queue`（天然线程安全，无需自己加锁） |
+| CPU 密集的抢票计算 | `multiprocessing` + `Queue`，绕过 GIL |
+
+> 真实系统还会把「扣库存」下沉到数据库，用 `update stock = stock - 1 where stock > 0` 的原子 SQL 或分布式锁来保证，而不是靠进程内的 `Lock`——因为服务是多机部署的。
+
 ---
 
 ## 二、常用方法速查表
@@ -345,6 +449,107 @@ CPU 密集设为核数；IO 密集可设 `核数 × (1 + IO等待时间/计算�
 
 `submit` 返回的占位对象，代表"将来完成的任务"。可用 `result(timeout=)` 取结果、`exception()` 查异常、`add_done_callback()` 注册回调、`cancel()` 取消（未开始的任务）。
 
+**Q16：什么是竞态条件（race condition）？举一个例子。**
+
+多个线程/进程**以不可预期的顺序访问共享资源**，导致结果依赖执行时序、不可复现，这就是竞态条件。最典型的是「先检查后使用」：
+
+```python
+if TICKETS > 0:        # 线程 A、B 可能同时通过检查
+    TICKETS -= 1       # 于是卖出超过库存 → 超卖
+```
+
+因为「检查」和「修改」不是原子操作，中间可能被切换。解决办法是**互斥**：用 `Lock` 把这段临界区保护起来，或改用线程安全的 `queue.Queue`。
+
+**Q17：`Lock` 和 `RLock` 有什么区别？什么时候必须用 `RLock`？**
+
+- `Lock`（互斥锁）：**不可重入**，同一线程第二次 `acquire` 会**永久阻塞**自己（自锁）；
+- `RLock`（可重入锁）：内部记录持有者与重入次数，同一线程可多次 `acquire`，相应地也要 `release` 同样次数才真正释放。
+
+必须用 `RLock` 的场景：**同一个线程内会递归进入临界区**——例如类的公开方法加了锁，内部又调用另一个也加同一把锁的方法。
+
+```python
+import threading
+
+rlock = threading.RLock()
+
+def outer():
+    with rlock:
+        inner()
+
+def inner():
+    with rlock:          # 用普通 Lock 这里会死锁
+        print('ok')
+```
+
+**Q18：`Semaphore` 和 `Lock` 有什么区别？**
+
+`Lock` 是**二元**的（同一时刻只允许 1 个）；`Semaphore` 是**计数**信号量，允许「最多 N 个」同时进入，用于**限流**（如限制并发请求数、限制连接池大小）。
+
+```python
+import threading
+
+sem = threading.Semaphore(3)      # 最多 3 个并发
+
+def task(i):
+    with sem:
+        print(f'任务 {i} 执行中')
+```
+
+耗尽了就阻塞，释放一个才能进下一个。还有个有用的变体 `BoundedSemaphore`，释放次数超过初值会报错，能及早发现 `release` 写多了的 bug。
+
+**Q19：`threading.Event` 有什么用？**
+
+它是一面**线程间的信号旗**：`set()` 置为真、`clear()` 置为假、`wait(timeout)` 阻塞直到被置真。典型场景是**一个线程等另一个线程发出「可以开始了」的信号**，比如主线程等初始化完成、或通知所有 worker 停止。
+
+```python
+import threading
+
+start_event = threading.Event()
+
+def worker():
+    start_event.wait()          # 一直等到信号
+    print('开始干活')
+
+t = threading.Thread(target=worker)
+t.start()
+
+# 主线程准备好后
+start_event.set()               # 唤醒所有等待者
+t.join()
+```
+
+**Q20：为什么 `queue.Queue` 不用自己加锁？**
+
+因为它**内部已经用锁和条件变量实现了线程安全**：`put`/`get` 是原子操作，并且支持 `task_done()` / `join()` 等待全部完成。多个消费者可以放心并发 `get()`，**同一张票不会被取两次**。
+
+```python
+import queue
+
+q = queue.Queue()
+q.put('票1')          # 生产者
+item = q.get()        # 消费者（阻塞直到有数据）
+```
+
+所以「任务分发给多个消费者」的场景应优先用 `Queue`，而不是「共享列表 + 自己加锁」——前者更简单也更不容易写错。注意 `queue` 之外，`LifoQueue`（栈）、`PriorityQueue`（优先级）同样是线程安全的。
+
+**Q21：线程池相比手动 `Thread` 有什么优势？**
+
+- **复用线程**：省去频繁创建/销毁线程的开销；
+- **限定并发数**：避免无限制建线程把系统拖垮；
+- **统一获取结果与异常**：`submit` 返回 `Future`，可用 `as_completed` / `map` 优雅收集；
+- **代码更短**：不用手动维护线程列表、`join` 和结果容器。
+
+```python
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+with ThreadPoolExecutor(max_workers=4) as pool:
+    futures = [pool.submit(fetch, url) for url in urls]
+    for f in as_completed(futures):
+        print(f.result())
+```
+
+> 记住：**进程池**用 `ProcessPoolExecutor`（绕 GIL，适合 CPU 密集），**线程池**用 `ThreadPoolExecutor`（适合 IO 密集）。
+
 ---
 
 ## 四、易错点
@@ -361,3 +566,7 @@ CPU 密集设为核数；IO 密集可设 `核数 × (1 + IO等待时间/计算�
 10. **`Queue` 忘记 `task_done`/`join`**：无法正确等待任务全部完成
 11. **滥用 `daemon=True`**：关键任务设成守护线程，主程序退出时任务被腰斩
 12. **进程间传 lambda**：`multiprocessing` 需 pickle，`lambda` 不可序列化，抛 `PicklingError`
+13. **只锁住「扣减」那一行**：检查和修改必须一起包进临界区，否则照样超卖
+14. **用普通 `Lock` 写递归临界区**：同一线程二次 `acquire` 会自锁，应改用 `RLock`
+15. **`Semaphore` 忘记释放**：`acquire` 后没用 `with` 或漏 `release`，配额会被永久占掉
+16. **`Event.wait()` 不设超时**：发信号的线程若死在路上，等待线程会永远挂起

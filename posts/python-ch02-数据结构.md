@@ -3,7 +3,7 @@ title: Python 基础笔记 · 第 2 章：数据结构
 date: 2026-09-03
 category: Python 基础
 tags: [Python, 学习笔记, 面试题, 数据结构, 容器, 深浅拷贝]
-summary: list / tuple / dict / set 四大容器的常用方法、时间复杂度、底层实现要点，切片与推导式的正确用法，深浅拷贝与可变默认参数陷阱，以及 12 道高频面试题。
+summary: list / tuple / dict / set 四大容器的常用方法、时间复杂度、底层实现要点，切片与推导式的正确用法，手写冒泡排序与选择排序及复杂度/稳定性对比，深浅拷贝与可变默认参数陷阱，以及 21 道高频面试题。
 ---
 
 ## 一、四大容器总览
@@ -175,6 +175,52 @@ good = [[0] * 3 for _ in range(3)]   # 每行都是独立的新列表
 good[0][0] = 1
 print(good)              # => [[1, 0, 0], [0, 0, 0], [0, 0, 0]]
 ```
+
+### 手写排序：冒泡排序与选择排序
+
+面试常要求手写 O(n²) 排序，重点是**说清思路 + 复杂度 + 稳定性**。
+
+**冒泡排序**：相邻两两比较，大的往后沉；每一轮结束，末尾多一个已就位元素。
+
+```python
+def bubble_sort(nums):
+    n = len(nums)
+    for i in range(n - 1):            # 需要 n-1 轮
+        swapped = False
+        for j in range(n - 1 - i):    # 每轮少比一个（尾部已就位）
+            if nums[j] > nums[j + 1]:
+                nums[j], nums[j + 1] = nums[j + 1], nums[j]
+                swapped = True
+        if not swapped:               # 本轮没发生交换 → 已有序，提前结束
+            break
+    return nums
+```
+
+> 加 `swapped` 标志后，最好情况（已有序）降为 **O(n)**；不加则恒为 O(n²)。原地排序、**稳定**。
+
+**选择排序**：每轮从未排序区间里「选」出最小值，与已排序区间的下一位交换。
+
+```python
+def selection_sort(nums):
+    n = len(nums)
+    for i in range(n - 1):
+        min_idx = i
+        for j in range(i + 1, n):
+            if nums[j] < nums[min_idx]:
+                min_idx = j
+        nums[i], nums[min_idx] = nums[min_idx], nums[i]
+    return nums
+```
+
+选择排序无论数据是否有序都要完整扫描，**恒定 O(n²)**；交换次数最少（最多 n-1 次），**不稳定**（跨越交换会打乱相等元素的相对次序）。
+
+| 排序 | 最好 | 平均 | 最坏 | 稳定性 | 特点 |
+| --- | --- | --- | --- | --- | --- |
+| 冒泡 | O(n) | O(n²) | O(n²) | 稳定 | 可提前结束 |
+| 选择 | O(n²) | O(n²) | O(n²) | 不稳定 | 交换次数最少 |
+| 内置 `sorted`/`list.sort` | O(n) | O(n log n) | O(n log n) | 稳定 | Timsort，实际首选 |
+
+> 工程里**一律用 `sorted()` / `list.sort()`**（Timsort，平均/最坏 O(n log n)，且稳定）。手写 O(n²) 排序只为考察基本功。
 
 ---
 
@@ -396,6 +442,71 @@ Counter(lst).most_common(1)      # [('a', 3)]
 
 可以：`[*lst]` 解包成列表，`{**d1, **d2}` 合并字典，`{*s}` 把集合转成元素在字典里当 key。
 
+**Q14：list 和 tuple 的区别？各自适合什么场景？**
+
+list **可变**、有丰富的增删改方法、不可哈希；tuple **不可变**、可哈希、可作 dict 的 key，创建和遍历略快、内存占用更小。经验法则：**结构固定的记录用 tuple**（如坐标、数据库一行），**需要增删改的集合用 list**。注意 tuple 的不可变是「元素引用不可变」——`t = ([1, 2], 3)` 里的列表仍可修改。
+
+**Q15：列表去重有哪几种方法？效率和保序性如何？**
+
+| 方法 | 复杂度 | 是否保序 |
+| --- | --- | --- |
+| `list(dict.fromkeys(lst))` | O(n) | **保序**（推荐） |
+| `list(set(lst))` | O(n) | 打乱顺序 |
+| 手工双循环 | O(n²) | 保序 |
+
+```python
+lst = [3, 1, 3, 2, 1]
+list(dict.fromkeys(lst))   # [3, 1, 2]
+list(set(lst))             # 顺序不定
+```
+
+面试常见错误答案是「set 最快」，但**要求保序时 `dict.fromkeys` 才是正解**，两者都是 O(n)。元素不可哈希（如 list）时只能手工去重。
+
+**Q16：字典为什么查询快？底层是什么结构？**
+
+CPython 的 dict 是**哈希表**（开放寻址法）。查找时先对 key 求哈希、映射到槽位，命中就比较 `==` 确认。所以平均查询/插入/删除都是 **O(1)**，最坏 O(n)（大量哈希冲突时）。当装载率超过约 2/3 会触发扩容（重新分配并 rehash）。Python 3.7+ 的 dict **保证插入顺序**，这是语言规范而非实现细节。
+
+**Q17：为什么 dict 的 key 必须是可哈希的？哪些类型能当 key？**
+
+哈希表要靠 key 的哈希值定位槽位，所以 key 必须满足：**实现 `__hash__` 与 `__eq__`，且哈希值在生命周期内不变**。可变对象（list、dict、set）因为内容会变、哈希值不稳定，所以不可哈希、不能当 key。可作 key 的有：`int`、`float`、`str`、`tuple`（且元素全部可哈希）、`frozenset`、自定义的不可变对象（实现了 `__hash__`）。
+
+**Q18：set 是怎么实现去重的？**
+
+set 同样是**哈希表**。插入元素时先算 `hash(x)` 定位桶：桶为空则放入；桶已有元素则用 `==` 逐个比较，相等就判定为重复、不插入。所以去重依赖「**哈希值不同 ⇒ 元素必不同；哈希值相同 ⇒ 再用 `==` 确认**」。这也解释了为什么 set 里的元素必须可哈希。
+
+**Q19：`list.sort()` 和 `sorted()` 有什么区别？**
+
+`list.sort()` 是**原地排序**，返回 `None`（所以 `b = a.sort()` 是个经典坑）；`sorted(iterable)` 返回**新列表**，原对象不变，可作用于任何可迭代对象（tuple、dict、生成器）。两者都**稳定**，底层都是 Timsort，均支持 `key=` 和 `reverse=`。
+
+**Q20：为什么 `in` 对 list 是 O(n)、对 set/dict 是 O(1)？怎么优化？**
+
+list 是顺序存储，`in` 只能从头逐个比较；set/dict 是哈希表，`in` 一次哈希定位即可。优化手段就是**把「频繁查找」的容器从 list 换成 set 或 dict**：
+
+```python
+# 慢：每次查找 O(n)，整体 O(n*m)
+for x in big_list:
+    if x in small_list: ...
+
+# 快：先把被查集合转成 set，整体 O(n+m)
+small = set(small_list)
+for x in big_list:
+    if x in small: ...
+```
+
+**Q21：浅拷贝有哪几种写法？`lst[:]`、`list(lst)`、`copy.copy(lst)` 有区别吗？**
+
+对**列表**而言三者**等价**，都只复制最外层：
+
+```python
+import copy
+a = [[1, 2], [3]]
+b, c, d = a[:], list(a), copy.copy(a)
+b[0].append(9)
+print(a)   # [[1, 2, 9], [3]]  内层仍是同一个对象
+```
+
+对 dict 用 `dict(d)` 或 `d.copy()`；对 set 用 `set(s)` 或 `s.copy()`。**嵌套结构必须用 `copy.deepcopy()`** 才能彻底隔离。
+
 ---
 
 ## 九、易错点
@@ -408,3 +519,8 @@ Counter(lst).most_common(1)      # [('a', 3)]
 6. **浅拷贝的陷阱**：嵌套结构要用 `deepcopy`；一维结构用 `[:]` 就够了
 7. **单元素 tuple 漏写逗号**：`(1)` 是 int，`(1,)` 才是 tuple
 8. **浮点比较别用 `==`**：`0.1 + 0.2 == 0.3` 为 False，用 `math.isclose` 或 `Decimal`
+9. **去重方法选错**：要求保序时 `list(set(lst))` 会打乱顺序，应改用 `list(dict.fromkeys(lst))`
+10. **`tuple` 内嵌可变对象**：`t = ([1], 2)` 里的列表能被改，tuple 的「不可变」只保证引用不变
+11. **选择排序是不稳定的**：跨越式交换会打乱相等元素的相对次序，需要稳定性请用 `sorted`
+12. **`sorted` 直接作用在混合类型上**：`sorted([1, 'a'])` 会 `TypeError`，需要 `key=` 统一口径
+13. **dict 遍历时改大小**：会抛 `RuntimeError: dictionary changed size during iteration`，先取 `list(d)`
